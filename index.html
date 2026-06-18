@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#05080d" />
-    <meta name="description" content="FTOKX SIMPLE PWA lập phiếu OKX X5 thủ công từ dữ liệu thị trường công khai." />
+    <meta name="description" content="FTOKX SIMPLE PWA lập phiếu OKX X5 thủ công với bộ lọc tín hiệu V1.2.1 và Watch Mode từ dữ liệu thị trường công khai." />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -16,7 +16,7 @@
 
     <main class="app-shell" aria-live="polite">
       <header class="hero-card">
-        <div class="eyebrow">X5 OKX TICKET · V1.1</div>
+        <div class="eyebrow">X5 OKX TICKET · V1.2.1</div>
         <h1>FTOKX SIMPLE PWA</h1>
         <p class="guard-line">App chỉ lập phiếu. Người giữ tay.</p>
         <div class="status-row">
@@ -36,7 +36,18 @@
             CẬP NHẬT DỮ LIỆU &amp; LẬP PHIẾU
           </button>
           <button id="clearSessionBtn" class="ghost-btn" type="button">Xóa phiên hôm nay</button>
-          <p class="install-hint">Có thể cài app ra màn hình chính. Dữ liệu thị trường cần internet. Offline chỉ xem lại phiếu đã lưu, không cập nhật được giá mới.</p>
+          <div class="watch-card">
+            <div>
+              <strong>Luôn Online Watch Mode</strong>
+              <p id="watchStatus" class="muted-text">Chưa bật. Dùng điện thoại phụ: mở app, bật màn hình, cắm sạc nếu canh lâu.</p>
+            </div>
+            <div class="watch-actions">
+              <button id="watchToggleBtn" class="ghost-btn watch-main" type="button">BẬT LUÔN ONLINE</button>
+              <button id="testAlertBtn" class="ghost-btn" type="button">Test chuông/rung</button>
+              <button id="stopAlertBtn" class="ghost-btn danger" type="button">Dừng báo động</button>
+            </div>
+          </div>
+          <p class="install-hint">Có thể cài app ra màn hình chính. Dữ liệu thị trường cần internet. Offline chỉ xem lại phiếu đã lưu, không cập nhật được giá mới. Watch Mode tự quét mỗi 5 phút khi app đang mở; không phải Telegram, không phải bot vào lệnh.</p>
         </section>
 
         <section id="messageArea" class="message-card hidden"></section>

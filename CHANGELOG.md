@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.2.1 — 2026-06-18
+
+- Thêm Signal Quality Pack.
+- Nâng ngưỡng lập phiếu từ 5/8 lên 6/8.
+- 5/8 chuyển thành WATCH, không lập phiếu.
+- Thêm cấp tín hiệu VALID_LONG, VALID_SHORT, STRONG_LONG, STRONG_SHORT.
+- Thêm bộ lọc BTC dẫn hướng tối thiểu 4/5 tiêu chí lõi.
+- Thêm vùng nhiễu sát EMA20 dưới 0.25% thì nghỉ.
+- Thêm kiểm tra độ dốc EMA50 trong 3 nến.
+- Thêm cooldown sau ngày lỗ: phải đạt 7/8 mới lập phiếu.
+- Thêm V3.3 Safety Gate: ATR% 0.755%–3.0%, volume BTC > 0, LONG cần BTC 4H đóng xanh.
+- Thêm Luôn Online Watch Mode: tự quét mỗi 5 phút khi app mở.
+- Thêm âm thanh/rung kiểu báo động khi Watch Mode phát hiện LONG/SHORT.
+- Thêm Screen Wake Lock nếu trình duyệt hỗ trợ.
+- Tăng service worker cache lên `ftokx-simple-pwa-v1.2.1`.
+- Cập nhật README và validator cho V1.2.1.
+
 ## 1.1.0 — 2026-06-18
 
 - Thêm tab LỊCH SỬ.
