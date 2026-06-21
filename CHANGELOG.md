@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.3.0 — 2026-06-21
+
+- Chuyển sản phẩm sang **BTC 20X Discipline Ticket**.
+- Chỉ dùng một cặp duy nhất: `BTCUSDT` / `BTC-USDT-SWAP`.
+- Đòn bẩy mặc định x20, margin mode: Cô lập, loại lệnh: Limit.
+- Thêm triết lý **Always Plan, Conditional Trade**: app luôn dựng 01 phiếu BTC để nhìn, nhưng Action quyết định có nên xuống tiền hay không.
+- Thêm **Fitness Score 0–100%** so với bộ phiếu chuẩn.
+- Thêm **Grade A/B/C/D/F** và tự co position: 50 / 35 / 25 / 15 / 0 USDT.
+- Thêm Action: `EXECUTABLE`, `WAIT_TRIGGER`, `PLAN_ONLY`, `LOCKED_RISK`.
+- Thêm No Chase rule: phiếu hết hiệu lực nếu giá chạy quá 0.25% khỏi Limit.
+- Thêm TP/SL động theo Grade, phù hợp với 20x.
+- Thêm Market Regime: Trend Up, Trend Down, Range, Chop/Nhiễu, Expansion mạnh.
+- Thêm slogan/câu nhắc của Lão theo từng trạng thái.
+- Watch Mode chỉ hú khi action = `EXECUTABLE`; không hú cho `PLAN_ONLY`, `WAIT_TRIGGER`, `LOCKED_RISK`.
+- Morning Review nâng cấp: ghi cảm xúc, dời SL, gồng lỗ, vào lại sau SL.
+- Giữ PWA tĩnh, no private API, no auto trade, no backend.
+- Giữ localStorage key cũ để tránh phá dữ liệu cũ.
+- Loại bỏ `.env.local` và `.vercel` khỏi ZIP phát hành.
+- Tăng service worker cache lên `ftokx-simple-pwa-v1.3.0`.
+
 ## 1.2.4 — 2026-06-20
 
 - Thêm Overnight Relaxed Mode từ 21:45 đến 23:59 theo giờ thiết bị.

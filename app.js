@@ -1,4 +1,4 @@
-const APP_VERSION = "1.2.4";
+const APP_VERSION = "1.3.0";
 const SESSION_KEY = "ftokx_simple_pwa_v1_session";
 const SETTINGS_KEY = "ftokx_simple_pwa_v1_settings";
 const HISTORY_KEY = "ftokx_simple_pwa_v1_history";
@@ -6,15 +6,6 @@ const ALERT_LOG_KEY = "ftokx_simple_pwa_v1_alert_log";
 const PAPER_TESTS_KEY = "ftokx_simple_pwa_v1_paper_tests";
 const CACHE_BUSTER = () => `ts=${Date.now()}`;
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
-const POSITION_USDT = 50;
-const LEVERAGE = 5;
-const MARGIN_USDT = 10;
-const FEE_USDT = 0.05;
-const WAIT_MINUTES = 20;
-const REVIEW_AFTER_FILL_MINUTES = 60;
-const DAILY_WIN = "+4.85";
-const DAILY_LOSS = "-3.40";
-const STOP_DAY_LOSS = "-4";
 const CANDLES_API = "/api/okx/candles";
 const TICKER_API = "/api/okx/ticker";
 const AUTO_WATCH_INTERVAL_MS = 5 * 60 * 1000;
@@ -23,73 +14,52 @@ const ALERT_BURST_INTERVAL_MS = 2400;
 const ALERT_LOG_LIMIT = 60;
 const PAPER_TEST_MAX_HOURS = 24;
 
-const SIGNAL_CONFIG = {
-  minTradeScore: 7,
-  watchScore: 5,
-  minScoreGap: 2,
-  strongScore: 7,
-  extremeRangeMultiplier: 1.6,
-  ema50SlopeLookback: 3,
-  minDistanceFromEma20: 0.004,
-  btcMustLead: true,
-  btcLeadMinScore: 5,
-  lossCooldownEnabled: true,
-  lossCooldownMinScore: 8,
+const SYMBOL_CONFIG = {
+  symbol: "BTCUSDT",
+  instId: "BTC-USDT-SWAP",
+  label: "BTC/USDT",
+  decimals: 1
+};
+
+const TRADING_CONFIG = {
+  marginMode: "Cô lập",
+  leverage: 20,
+  orderType: "Limit",
+  waitMinutes: 20,
+  reviewAfterFillMinutes: 60,
+  feeRate: 0.0005,
+  noChasePct: 0.0025,
+  lossCooldownHours: 6,
+  maxLossesPerDay: 1,
+  maxTradesPerDay: 1,
+  dailyStopLossUsdt: -2,
+  dailyStopWinUsdt: 2,
+  sideNoiseGapLimit: 0,
   atrPctMin: 0.01,
   atrPctMax: 0.02,
-  requireVolumePositive: true,
-  longRequireGreenCandle: true
+  minDistanceFromEma20: 0.004,
+  weakDistanceFromEma20: 0.0025,
+  extremeRangeMultiplier: 1.6,
+  ema50SlopeLookback: 3,
+  minFreshHours: 6,
+  maxStaleHours: 12
 };
 
-const OVERNIGHT_CONFIG = {
-  enabled: true,
-  startHour: 21,
-  startMinute: 45,
-  endHour: 23,
-  endMinute: 59,
-  minTradeScore: 6,
-  minScoreGap: 2,
-  btcLeadMinScore: 4,
-  minDistanceFromEma20: 0.0025,
-  bestEffortMinScore: 3,
-  bestEffortMinGap: 0,
-  bestEffortPositionRatio: 0.5,
-  normalPositionRatio: 1,
-  label: "21:45–23:59"
+const SIZE_BY_GRADE = {
+  A: 50,
+  B: 35,
+  C: 25,
+  D: 15,
+  F: 0
 };
 
-const ORDER_CONFIG = [
-  {
-    symbol: "BTCUSDT",
-    instId: "BTC-USDT-SWAP",
-    label: "BTC",
-    decimals: 1,
-    tpPct: 0.03,
-    slPct: 0.02,
-    netWin: "+1.45",
-    netLoss: "-1.05"
-  },
-  {
-    symbol: "ETHUSDT",
-    instId: "ETH-USDT-SWAP",
-    label: "ETH",
-    decimals: 2,
-    tpPct: 0.03,
-    slPct: 0.02,
-    netWin: "+1.45",
-    netLoss: "-1.05"
-  },
-  {
-    symbol: "OKBUSDT",
-    instId: "OKB-USDT-SWAP",
-    label: "OKB",
-    decimals: 3,
-    tpPct: 0.04,
-    slPct: 0.025,
-    netWin: "+1.95",
-    netLoss: "-1.30"
-  }
-];
+const TP_SL_BY_GRADE = {
+  A: { tp: 0.01, sl: 0.0045 },
+  B: { tp: 0.008, sl: 0.004 },
+  C: { tp: 0.0065, sl: 0.0035 },
+  D: { tp: 0.005, sl: 0.003 },
+  F: { tp: 0.004, sl: 0.0025 }
+};
 
 const STATUS_OPTIONS = [
   "Chờ đặt",
@@ -104,10 +74,38 @@ const RESULT_OPTIONS = [
   { value: "NONE", label: "Chưa chốt", pnl: "" },
   { value: "SKIPPED", label: "Không giao dịch", pnl: "0" },
   { value: "NOT_FILLED", label: "Không khớp đã hủy", pnl: "0" },
-  { value: "WIN", label: "Thắng cả 3", pnl: "4.85" },
-  { value: "LOSS", label: "Thua cả 3", pnl: "-3.40" },
-  { value: "MIXED", label: "Kết quả hỗn hợp", pnl: "" }
+  { value: "TP", label: "TP", pnl: "" },
+  { value: "SL", label: "SL", pnl: "" },
+  { value: "MANUAL_CLOSE", label: "Manual Close", pnl: "" },
+  { value: "STILL_OPEN", label: "Still Open", pnl: "" }
 ];
+
+const SLOGANS = {
+  EXECUTABLE: [
+    "Lệnh đẹp vẫn phải nhỏ, vì thị trường không nợ ta điều gì.",
+    "20x chỉ dùng được khi SL là luật, không phải gợi ý."
+  ],
+  WAIT_TRIGGER: [
+    "Giá chạy mất thì để nó chạy; tiền còn là cơ hội còn.",
+    "Trader già không đuổi giá, trader già đợi giá quay về."
+  ],
+  PLAN_ONLY: [
+    "Phiếu yếu là bản đồ, không phải lời mời xuống tiền.",
+    "Có kế hoạch để tỉnh táo, không phải để ép lệnh."
+  ],
+  LOCKED_RISK: [
+    "Khi rủi ro khóa cửa, người sống sót không phá khóa.",
+    "Không có lệnh cũng là một vị thế."
+  ],
+  COOLDOWN: [
+    "Sau một lệnh thua, việc đầu tiên là giữ tay.",
+    "Gỡ lỗ bằng kỷ luật, không gỡ bằng đòn bẩy."
+  ],
+  DATA: [
+    "Không có dữ liệu sạch thì không có quyết định sạch.",
+    "Dữ liệu mù thì tay phải đứng yên."
+  ]
+};
 
 const els = {
   networkStatus: document.querySelector("#networkStatus"),
@@ -154,6 +152,7 @@ function saveSettingsOnce() {
   saveSettingsData({
     ...existing,
     version: APP_VERSION,
+    strategy: "BTC_20X_DISCIPLINE_TICKET",
     createdAt: existing.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -218,7 +217,7 @@ async function runMarketUpdate(options = {}) {
   const source = options.source || "manual";
   const confirmOverwrite = options.confirmOverwrite !== false;
   if (!navigator.onLine) {
-    showMessage("Không lấy được dữ liệu. Nghỉ là đúng luật.", "Offline chỉ xem lại phiếu đã lưu, không cập nhật được giá mới.", "bad");
+    showMessage("Không lấy được dữ liệu", "Không có dữ liệu sạch thì không có quyết định sạch.", "bad");
     updateWatchStatus("Offline, Watch Mode tạm dừng lấy dữ liệu mới.");
     return null;
   }
@@ -235,23 +234,23 @@ async function runMarketUpdate(options = {}) {
   }
 
   try {
-    const [btcCandles, ethCandles, tickers] = await Promise.all([
-      fetchClosedCandles("BTC-USDT-SWAP"),
-      fetchClosedCandles("ETH-USDT-SWAP"),
-      fetchTickers(ORDER_CONFIG.map((item) => item.instId))
+    const [btcCandles, ticker] = await Promise.all([
+      fetchClosedCandles(SYMBOL_CONFIG.instId),
+      fetchTicker(SYMBOL_CONFIG.instId)
     ]);
 
     const now = new Date();
-    const analysis = analyzeMarket(btcCandles, ethCandles, now);
-    updateOpenPaperTests(tickers, now);
-    const session = buildSession(analysis, tickers, now);
+    const analysis = analyzeMarket(btcCandles, ticker, now);
+    updateOpenPaperTests({ [SYMBOL_CONFIG.instId]: ticker }, now);
+    const session = buildSession(analysis, ticker, now);
     currentSession = session;
     saveSession(session);
     upsertHistoryFromSession(session, existingToday);
     renderSession();
     renderHistory();
+
     if (source === "auto") {
-      updateWatchStatus(`Vừa quét lúc ${formatClock(now.toISOString())}. Kết quả: ${session.decision === "NO_TRADE" ? "nghỉ" : session.decision}.`);
+      updateWatchStatus(`Vừa quét lúc ${formatClock(now.toISOString())}. Kết quả: ${session.actionLabel} · ${session.fitness}% · Grade ${session.grade}.`);
       const createdPaperTest = maybeAlertSignal(session);
       if (createdPaperTest) {
         renderSession();
@@ -261,7 +260,7 @@ async function runMarketUpdate(options = {}) {
     return session;
   } catch (error) {
     console.error(error);
-    showMessage("Không lấy được dữ liệu. Nghỉ là đúng luật.", "Không giả dữ liệu thị trường. Hôm nay xem thủ công hoặc nghỉ.", "bad");
+    showMessage("Không lấy được dữ liệu", "Không giả dữ liệu thị trường. Dữ liệu mù thì tay phải đứng yên.", "bad");
     updateWatchStatus("Lỗi lấy dữ liệu. Watch Mode sẽ thử lại ở vòng kế tiếp.");
     return null;
   } finally {
@@ -294,7 +293,6 @@ async function fetchClosedCandles(instId) {
   if (candles.length < 55) {
     throw new Error(`Not enough closed candles ${instId}`);
   }
-
   return candles;
 }
 
@@ -309,78 +307,71 @@ function parseCandle(row) {
   };
 }
 
-async function fetchTickers(instIds) {
-  const entries = await Promise.all(instIds.map(async (instId) => {
-    const url = `${TICKER_API}?instId=${encodeURIComponent(instId)}&${CACHE_BUSTER()}`;
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`Ticker fetch failed ${instId}`);
-    }
-    const payload = await response.json();
-    const first = payload && Array.isArray(payload.data) ? payload.data[0] : null;
-    const last = first ? Number(first.last) : NaN;
-    if (!Number.isFinite(last) || last <= 0) {
-      throw new Error(`Bad ticker payload ${instId}`);
-    }
-    return [instId, last];
-  }));
-
-  return Object.fromEntries(entries);
+async function fetchTicker(instId) {
+  const url = `${TICKER_API}?instId=${encodeURIComponent(instId)}&${CACHE_BUSTER()}`;
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Ticker fetch failed ${instId}`);
+  }
+  const payload = await response.json();
+  const first = payload && Array.isArray(payload.data) ? payload.data[0] : null;
+  const last = first ? Number(first.last) : NaN;
+  if (!Number.isFinite(last) || last <= 0) {
+    throw new Error(`Bad ticker payload ${instId}`);
+  }
+  return last;
 }
 
-function analyzeMarket(btcCandles, ethCandles, now = new Date()) {
+function analyzeMarket(btcCandles, ticker, now = new Date()) {
   const btc = enrichCandles(btcCandles);
-  const eth = enrichCandles(ethCandles);
-  const latestBtc = btc.latest;
-  const latestEth = eth.latest;
-  const previousBtc = btc.previous;
-  const previousEth = eth.previous;
-  const extreme = latestBtc.range > btc.avgRange20 * SIGNAL_CONFIG.extremeRangeMultiplier;
-  const distanceFromEma20 = Math.abs(latestBtc.close - btc.ema20) / latestBtc.close;
-  const btcAtrPct = btc.atr14 / latestBtc.close;
-  const btcVolumePositive = Number.isFinite(latestBtc.volume) && latestBtc.volume > 0;
-  const btcGreenCandle = latestBtc.close > latestBtc.open;
-
-  const btcLongLean = latestBtc.close > btc.ema20 && btc.ema20 > btc.ema50;
-  const ethLongLean = latestEth.close > eth.ema20 && eth.ema20 > eth.ema50;
-  const btcShortLean = latestBtc.close < btc.ema20 && btc.ema20 < btc.ema50;
-  const ethShortLean = latestEth.close < eth.ema20 && eth.ema20 < eth.ema50;
+  const latest = btc.latest;
+  const previous = btc.previous;
+  const closedAtMs = latest.time + FOUR_HOURS_MS;
+  const closeAgeHours = Math.max(0, (now.getTime() - closedAtMs) / (60 * 60 * 1000));
+  const dataFreshness = getDataFreshness(closeAgeHours);
+  const extreme = latest.range > btc.avgRange20 * TRADING_CONFIG.extremeRangeMultiplier;
+  const distanceFromEma20 = Math.abs(latest.close - btc.ema20) / latest.close;
+  const btcAtrPct = btc.atr14 / latest.close;
+  const avgVolume20 = btc.avgVolume20;
+  const volumeRatio = avgVolume20 > 0 ? latest.volume / avgVolume20 : 0;
+  const btcVolumePositive = Number.isFinite(latest.volume) && latest.volume > 0;
 
   const btcLongCoreChecks = [
-    latestBtc.close > btc.ema20,
+    latest.close > btc.ema20,
     btc.ema20 > btc.ema50,
-    latestBtc.close > latestBtc.open,
-    latestBtc.close > previousBtc.close,
+    latest.close > latest.open,
+    latest.close > previous.close,
     btc.ema50SlopeUp
   ];
-
   const btcShortCoreChecks = [
-    latestBtc.close < btc.ema20,
+    latest.close < btc.ema20,
     btc.ema20 < btc.ema50,
-    latestBtc.close < latestBtc.open,
-    latestBtc.close < previousBtc.close,
+    latest.close < latest.open,
+    latest.close < previous.close,
     btc.ema50SlopeDown
   ];
 
+  const atrOk = Number.isFinite(btcAtrPct) && btcAtrPct >= TRADING_CONFIG.atrPctMin && btcAtrPct <= TRADING_CONFIG.atrPctMax;
+  const volumeOk = btcVolumePositive && volumeRatio >= 0.6;
+  const freshOk = dataFreshness.status === "FRESH";
   const longChecks = [
-    latestBtc.close > btc.ema20,
+    latest.close > btc.ema20,
     btc.ema20 > btc.ema50,
-    latestBtc.close > latestBtc.open,
-    latestBtc.close > previousBtc.close,
-    latestEth.close > eth.ema20,
-    eth.ema20 > eth.ema50,
-    btcLongLean && ethLongLean,
+    latest.close > latest.open,
+    latest.close > previous.close,
+    btc.ema50SlopeUp,
+    distanceFromEma20 >= TRADING_CONFIG.weakDistanceFromEma20,
+    atrOk,
     !extreme
   ];
-
   const shortChecks = [
-    latestBtc.close < btc.ema20,
+    latest.close < btc.ema20,
     btc.ema20 < btc.ema50,
-    latestBtc.close < latestBtc.open,
-    latestBtc.close < previousBtc.close,
-    latestEth.close < eth.ema20,
-    eth.ema20 < eth.ema50,
-    btcShortLean && ethShortLean,
+    latest.close < latest.open,
+    latest.close < previous.close,
+    btc.ema50SlopeDown,
+    distanceFromEma20 >= TRADING_CONFIG.weakDistanceFromEma20,
+    atrOk,
     !extreme
   ];
 
@@ -388,66 +379,99 @@ function analyzeMarket(btcCandles, ethCandles, now = new Date()) {
   const shortScore = countTrue(shortChecks);
   const btcLongCoreScore = countTrue(btcLongCoreChecks);
   const btcShortCoreScore = countTrue(btcShortCoreChecks);
-  const cooldown = getLossCooldownState();
-  const overnight = getOvernightState(now);
-  const decision = decide({
+  const side = pickPlanSide({
     longScore,
     shortScore,
-    extreme,
-    distanceFromEma20,
     btcLongCoreScore,
     btcShortCoreScore,
-    cooldown,
+    close: latest.close,
+    ema20: btc.ema20
+  });
+  const gap = Math.abs(longScore - shortScore);
+  const sideScore = side === "LONG" ? longScore : shortScore;
+  const oppositeScore = side === "LONG" ? shortScore : longScore;
+  const sideCoreScore = side === "LONG" ? btcLongCoreScore : btcShortCoreScore;
+  const oppositeCoreScore = side === "LONG" ? btcShortCoreScore : btcLongCoreScore;
+  const fitness = computeFitness({
+    side,
+    latest,
+    previous,
+    btc,
+    distanceFromEma20,
+    btcAtrPct,
+    volumeRatio,
+    btcVolumePositive,
+    extreme,
+    gap,
+    dataFreshness
+  });
+  const grade = getGrade(fitness);
+  const hardVeto = getHardVetoReason({
+    dataFreshness,
+    extreme,
     btcAtrPct,
     btcVolumePositive,
-    btcGreenCandle,
-    btcAboveEma20: latestBtc.close > btc.ema20,
-    btcBelowEma20: latestBtc.close < btc.ema20,
-    overnight
+    volumeRatio,
+    side,
+    gap,
+    cooldown: getCooldownState(now),
+    sideScore,
+    oppositeScore
   });
+  const action = getAction({ fitness, grade, hardVeto });
+  const marketRegime = getMarketRegime({ latest, previous, btc, distanceFromEma20, btcAtrPct, extreme });
+  const slogan = getSlogan({ action, hardVeto });
+  const actionLabel = getActionLabel(action);
 
   return {
-    decision: decision.value,
-    reason: decision.reason,
-    signalTier: decision.tier,
-    ticketType: decision.ticketType,
-    ticketLabel: decision.ticketLabel,
-    riskProfile: decision.riskProfile,
-    overnight,
+    decision: side,
+    action,
+    actionLabel,
+    reason: buildReason({ action, side, fitness, grade, hardVeto, marketRegime, sideScore, oppositeScore, sideCoreScore }),
+    signalTier: `${action}_${side}`,
+    ticketType: action,
+    ticketLabel: actionLabel,
+    riskProfile: getRiskProfile(action, grade),
+    fitness,
+    grade,
+    slogan,
+    marketRegime,
     longScore,
     shortScore,
-    closedAt: latestBtc.closeTimeIso,
+    gap,
+    sideScore,
+    oppositeScore,
+    btcLongCoreScore,
+    btcShortCoreScore,
+    sideCoreScore,
+    oppositeCoreScore,
+    closedAt: latest.closeTimeIso,
+    dataFreshness,
+    hardVeto,
     btc: summarizeTechnical(btc),
-    eth: summarizeTechnical(eth),
     extreme,
     filters: {
       distanceFromEma20: Number((distanceFromEma20 * 100).toFixed(3)),
-      minDistanceFromEma20: Number((SIGNAL_CONFIG.minDistanceFromEma20 * 100).toFixed(3)),
-      minOvernightDistanceFromEma20: Number((OVERNIGHT_CONFIG.minDistanceFromEma20 * 100).toFixed(3)),
-      btcLongCoreScore,
-      btcShortCoreScore,
-      btcLeadMinScore: SIGNAL_CONFIG.btcLeadMinScore,
-      ema50SlopeLookback: SIGNAL_CONFIG.ema50SlopeLookback,
-      btcEma50Slope: btc.ema50SlopeDirection,
-      ethEma50Slope: eth.ema50SlopeDirection,
-      cooldownActive: cooldown.active,
-      cooldownReason: cooldown.reason,
+      minDistanceFromEma20: Number((TRADING_CONFIG.minDistanceFromEma20 * 100).toFixed(3)),
+      weakDistanceFromEma20: Number((TRADING_CONFIG.weakDistanceFromEma20 * 100).toFixed(3)),
       btcAtrPct: Number((btcAtrPct * 100).toFixed(3)),
-      atrPctMin: Number((SIGNAL_CONFIG.atrPctMin * 100).toFixed(3)),
-      atrPctMax: Number((SIGNAL_CONFIG.atrPctMax * 100).toFixed(3)),
+      atrPctMin: Number((TRADING_CONFIG.atrPctMin * 100).toFixed(3)),
+      atrPctMax: Number((TRADING_CONFIG.atrPctMax * 100).toFixed(3)),
+      volumeRatio: Number(volumeRatio.toFixed(2)),
       btcVolumePositive,
-      btcLastCandle: btcGreenCandle ? "green" : latestBtc.close < latestBtc.open ? "red" : "flat",
-      ethLastCandle: latestEth.close > latestEth.open ? "green" : latestEth.close < latestEth.open ? "red" : "flat",
-      ethCloseVsPrevious: latestEth.close > previousEth.close ? "up" : latestEth.close < previousEth.close ? "down" : "flat"
+      btcLastCandle: latest.close > latest.open ? "green" : latest.close < latest.open ? "red" : "flat",
+      btcCloseVsPrevious: latest.close > previous.close ? "up" : latest.close < previous.close ? "down" : "flat",
+      cooldownActive: getCooldownState(now).active,
+      cooldownReason: getCooldownState(now).reason
     },
-    signalConfig: { ...SIGNAL_CONFIG },
-    overnightConfig: { ...OVERNIGHT_CONFIG }
+    signalConfig: { ...TRADING_CONFIG }
   };
 }
 
 function enrichCandles(candles) {
   const closes = candles.map((item) => item.close);
   const ranges = candles.map((item) => item.high - item.low);
+  const volumes = candles.map((item) => item.volume);
   const trueRanges = candles.map((item, index) => {
     if (index === 0) {
       return item.high - item.low;
@@ -461,12 +485,11 @@ function enrichCandles(candles) {
   const ema50Series = computeEmaSeries(closes, 50);
   const ema20 = getLastNumber(ema20Series);
   const ema50 = getLastNumber(ema50Series);
-  const slopeIndex = Math.max(0, ema50Series.length - 1 - SIGNAL_CONFIG.ema50SlopeLookback);
+  const slopeIndex = Math.max(0, ema50Series.length - 1 - TRADING_CONFIG.ema50SlopeLookback);
   const ema50Past = ema50Series[slopeIndex] || ema50;
-  const lastRanges = ranges.slice(-20);
-  const avgRange20 = lastRanges.reduce((sum, value) => sum + value, 0) / lastRanges.length;
-  const lastTrueRanges = trueRanges.slice(-14);
-  const atr14 = lastTrueRanges.reduce((sum, value) => sum + value, 0) / lastTrueRanges.length;
+  const avgRange20 = average(ranges.slice(-20));
+  const avgVolume20 = average(volumes.slice(-20));
+  const atr14 = average(trueRanges.slice(-14));
   const ema50SlopeUp = ema50 > ema50Past;
   const ema50SlopeDown = ema50 < ema50Past;
 
@@ -484,6 +507,7 @@ function enrichCandles(candles) {
     ema50SlopeDown,
     ema50SlopeDirection: ema50SlopeUp ? "up" : ema50SlopeDown ? "down" : "flat",
     avgRange20,
+    avgVolume20,
     atr14
   };
 }
@@ -510,266 +534,19 @@ function getLastNumber(values) {
   return 0;
 }
 
+function average(values) {
+  if (!values.length) {
+    return 0;
+  }
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
 function countTrue(items) {
   return items.filter(Boolean).length;
 }
 
-function decide(context) {
-  const {
-    longScore,
-    shortScore,
-    extreme,
-    distanceFromEma20,
-    btcLongCoreScore,
-    btcShortCoreScore,
-    cooldown,
-    btcAtrPct,
-    btcVolumePositive,
-    btcGreenCandle,
-    btcAboveEma20,
-    btcBelowEma20,
-    overnight
-  } = context;
-
-  const longGap = longScore - shortScore;
-  const shortGap = shortScore - longScore;
-  const longWatch = longScore >= SIGNAL_CONFIG.watchScore && longGap >= SIGNAL_CONFIG.minScoreGap;
-  const shortWatch = shortScore >= SIGNAL_CONFIG.watchScore && shortGap >= SIGNAL_CONFIG.minScoreGap;
-  const maxScore = Math.max(longScore, shortScore);
-  const hardVeto = getHardVetoReason({
-    extreme,
-    btcAtrPct,
-    btcVolumePositive,
-    cooldown,
-    maxScore
-  });
-
-  if (hardVeto) {
-    return {
-      value: "NO_TRADE",
-      tier: "NO_TRADE_LOCKED",
-      ticketType: "LOCKED",
-      ticketLabel: "Không dựng phiếu",
-      riskProfile: "LOCKED",
-      reason: hardVeto
-    };
-  }
-
-  const standardLong = longScore >= SIGNAL_CONFIG.minTradeScore && longGap >= SIGNAL_CONFIG.minScoreGap;
-  const standardShort = shortScore >= SIGNAL_CONFIG.minTradeScore && shortGap >= SIGNAL_CONFIG.minScoreGap;
-  const standardDistanceOk = distanceFromEma20 >= SIGNAL_CONFIG.minDistanceFromEma20;
-
-  if (standardDistanceOk && standardLong) {
-    if (SIGNAL_CONFIG.longRequireGreenCandle && !btcGreenCandle) {
-      return watchDecision("Long bị chặn theo V3.3: BTC 4H chưa đóng nến xanh.");
-    }
-    if (SIGNAL_CONFIG.btcMustLead && btcLongCoreScore < SIGNAL_CONFIG.btcLeadMinScore) {
-      return watchDecision("Long có điểm nhưng BTC chưa dẫn hướng đủ 5/5 tiêu chí lõi.");
-    }
-    if (cooldown.active && longScore < SIGNAL_CONFIG.lossCooldownMinScore) {
-      return watchDecision("Sau ngày lỗ, luật cooldown yêu cầu Long đạt 8/8 mới lập phiếu.");
-    }
-    return {
-      value: "LONG",
-      tier: longScore >= SIGNAL_CONFIG.strongScore ? "STRONG_LONG" : "VALID_LONG",
-      ticketType: "STANDARD",
-      ticketLabel: "Phiếu chuẩn",
-      riskProfile: "NORMAL",
-      reason: longScore >= SIGNAL_CONFIG.strongScore ? "Strong Long: đủ điểm cao, BTC dẫn hướng, không tăng vốn." : "Valid Long: đạt 7/8, BTC dẫn hướng tối đa, đủ lệch so với Short."
-    };
-  }
-
-  if (standardDistanceOk && standardShort) {
-    if (SIGNAL_CONFIG.btcMustLead && btcShortCoreScore < SIGNAL_CONFIG.btcLeadMinScore) {
-      return watchDecision("Short có điểm nhưng BTC chưa dẫn hướng đủ 5/5 tiêu chí lõi.");
-    }
-    if (cooldown.active && shortScore < SIGNAL_CONFIG.lossCooldownMinScore) {
-      return watchDecision("Sau ngày lỗ, luật cooldown yêu cầu Short đạt 8/8 mới lập phiếu.");
-    }
-    return {
-      value: "SHORT",
-      tier: shortScore >= SIGNAL_CONFIG.strongScore ? "STRONG_SHORT" : "VALID_SHORT",
-      ticketType: "STANDARD",
-      ticketLabel: "Phiếu chuẩn",
-      riskProfile: "NORMAL",
-      reason: shortScore >= SIGNAL_CONFIG.strongScore ? "Strong Short: đủ điểm cao, BTC dẫn hướng, không tăng vốn." : "Valid Short: đạt 7/8, BTC dẫn hướng tối đa, đủ lệch so với Long."
-    };
-  }
-
-  const overnightCandidate = getOvernightCandidate({
-    longScore,
-    shortScore,
-    longGap,
-    shortGap,
-    btcLongCoreScore,
-    btcShortCoreScore,
-    btcGreenCandle,
-    distanceFromEma20,
-    overnight
-  });
-
-  if (overnightCandidate) {
-    return overnightCandidate;
-  }
-
-  if (overnight.active) {
-    const bestEffort = getBestEffortCandidate({
-      longScore,
-      shortScore,
-      btcLongCoreScore,
-      btcShortCoreScore,
-      btcAboveEma20,
-      btcBelowEma20
-    });
-    if (bestEffort) {
-      return bestEffort;
-    }
-    return {
-      value: "NO_TRADE",
-      tier: "NO_TRADE_LOCKED",
-      ticketType: "LOCKED",
-      ticketLabel: "Không dựng phiếu",
-      riskProfile: "LOCKED",
-      reason: "Sau 21:45 nhưng Long/Short không có lợi thế tối thiểu để dựng phiếu tham khảo. Không ép lệnh."
-    };
-  }
-
-  if (!standardDistanceOk) {
-    return { value: "NO_TRADE", tier: "NO_TRADE", ticketType: "NONE", ticketLabel: "Không có phiếu", riskProfile: "NONE", reason: "Giá BTC sát EMA20, vùng nhiễu cao. Không lập phiếu." };
-  }
-
-  if (longWatch || shortWatch) {
-    return { value: "NO_TRADE", tier: "WATCH", ticketType: "NONE", ticketLabel: "Theo dõi", riskProfile: "NONE", reason: "Tín hiệu mới ở mức WATCH 5/8 hoặc 6/8. Theo luật V1.2.4 ban ngày: quan sát, không lập phiếu." };
-  }
-
-  return { value: "NO_TRADE", tier: "NO_TRADE", ticketType: "NONE", ticketLabel: "Không có phiếu", riskProfile: "NONE", reason: "Không rõ hướng thì nghỉ. Tiền mặt cũng là một vị thế." };
-}
-
-function watchDecision(reason) {
-  return { value: "NO_TRADE", tier: "WATCH", ticketType: "NONE", ticketLabel: "Theo dõi", riskProfile: "NONE", reason };
-}
-
-function getHardVetoReason(context) {
-  const { extreme, btcAtrPct, btcVolumePositive, cooldown, maxScore } = context;
-  if (SIGNAL_CONFIG.requireVolumePositive && !btcVolumePositive) {
-    return "NO_TRADE_LOCKED: volume BTC lỗi hoặc bằng 0. Không dựng phiếu.";
-  }
-  if (!Number.isFinite(btcAtrPct) || btcAtrPct < SIGNAL_CONFIG.atrPctMin) {
-    return "NO_TRADE_LOCKED: BTC ATR% dưới 1.0%. Biến động quá thấp, không dựng phiếu.";
-  }
-  if (btcAtrPct > SIGNAL_CONFIG.atrPctMax) {
-    return "NO_TRADE_LOCKED: BTC ATR% trên 2.0%. Biến động quá loạn, không dựng phiếu.";
-  }
-  if (extreme) {
-    return "NO_TRADE_LOCKED: nến BTC 4H quá cực đoan. Không dựng phiếu qua đêm.";
-  }
-  if (cooldown.active && maxScore < SIGNAL_CONFIG.lossCooldownMinScore) {
-    return "NO_TRADE_LOCKED: sau ngày lỗ chỉ nhận kèo 8/8. Overnight và Best Effort bị khóa.";
-  }
-  return "";
-}
-
-function getOvernightCandidate(context) {
-  const {
-    longScore,
-    shortScore,
-    longGap,
-    shortGap,
-    btcLongCoreScore,
-    btcShortCoreScore,
-    btcGreenCandle,
-    distanceFromEma20,
-    overnight
-  } = context;
-
-  if (!overnight.active) {
-    return null;
-  }
-
-  const distanceOk = distanceFromEma20 >= OVERNIGHT_CONFIG.minDistanceFromEma20;
-  const longReady = longScore >= OVERNIGHT_CONFIG.minTradeScore
-    && longGap >= OVERNIGHT_CONFIG.minScoreGap
-    && btcLongCoreScore >= OVERNIGHT_CONFIG.btcLeadMinScore
-    && (!SIGNAL_CONFIG.longRequireGreenCandle || btcGreenCandle)
-    && distanceOk;
-  const shortReady = shortScore >= OVERNIGHT_CONFIG.minTradeScore
-    && shortGap >= OVERNIGHT_CONFIG.minScoreGap
-    && btcShortCoreScore >= OVERNIGHT_CONFIG.btcLeadMinScore
-    && distanceOk;
-
-  if (longReady) {
-    return {
-      value: "LONG",
-      tier: "OVERNIGHT_READY_LONG",
-      ticketType: "OVERNIGHT_READY",
-      ticketLabel: "Phiếu qua đêm",
-      riskProfile: "OVERNIGHT",
-      reason: "OVERNIGHT_READY: sau 21:45, Long đạt ngưỡng nới lỏng 6/8, BTC core >= 4/5, thoát vùng EMA20 tối thiểu 0.25%. Qua đêm phải có TP/SL."
-    };
-  }
-
-  if (shortReady) {
-    return {
-      value: "SHORT",
-      tier: "OVERNIGHT_READY_SHORT",
-      ticketType: "OVERNIGHT_READY",
-      ticketLabel: "Phiếu qua đêm",
-      riskProfile: "OVERNIGHT",
-      reason: "OVERNIGHT_READY: sau 21:45, Short đạt ngưỡng nới lỏng 6/8, BTC core >= 4/5, thoát vùng EMA20 tối thiểu 0.25%. Qua đêm phải có TP/SL."
-    };
-  }
-
-  return null;
-}
-
-function getBestEffortCandidate(context) {
-  const {
-    longScore,
-    shortScore,
-    btcLongCoreScore,
-    btcShortCoreScore,
-    btcAboveEma20,
-    btcBelowEma20
-  } = context;
-
-  const maxScore = Math.max(longScore, shortScore);
-  if (maxScore < OVERNIGHT_CONFIG.bestEffortMinScore) {
-    return null;
-  }
-
-  const side = pickBestEffortSide({
-    longScore,
-    shortScore,
-    btcLongCoreScore,
-    btcShortCoreScore,
-    btcAboveEma20,
-    btcBelowEma20
-  });
-
-  if (!side) {
-    return null;
-  }
-
-  return {
-    value: side,
-    tier: `BEST_EFFORT_${side}`,
-    ticketType: "BEST_EFFORT",
-    ticketLabel: "Phiếu tham khảo",
-    riskProfile: "REDUCED",
-    reason: `BEST_EFFORT / NOT_RECOMMENDED: sau 21:45 chưa đủ tín hiệu chuẩn, app dựng 01 phiếu tham khảo ${side} tối ưu nhất theo điểm hiện tại. Giảm vốn 50%, bắt buộc TP/SL, không bắt buộc vào lệnh.`
-  };
-}
-
-function pickBestEffortSide(context) {
-  const {
-    longScore,
-    shortScore,
-    btcLongCoreScore,
-    btcShortCoreScore,
-    btcAboveEma20,
-    btcBelowEma20
-  } = context;
-
+function pickPlanSide(context) {
+  const { longScore, shortScore, btcLongCoreScore, btcShortCoreScore, close, ema20 } = context;
   if (longScore > shortScore) {
     return "LONG";
   }
@@ -782,25 +559,182 @@ function pickBestEffortSide(context) {
   if (btcShortCoreScore > btcLongCoreScore) {
     return "SHORT";
   }
-  if (btcAboveEma20) {
-    return "LONG";
+  return close >= ema20 ? "LONG" : "SHORT";
+}
+
+function computeFitness(context) {
+  const { side, latest, previous, btc, distanceFromEma20, btcAtrPct, volumeRatio, btcVolumePositive, extreme, gap, dataFreshness } = context;
+  let score = 0;
+
+  if (side === "LONG") {
+    score += latest.close > btc.ema20 ? 9 : 0;
+    score += btc.ema20 > btc.ema50 ? 8 : 0;
+    score += btc.ema50SlopeUp ? 8 : 0;
+    score += latest.close > latest.open ? 8 : 0;
+    score += latest.close > previous.close ? 7 : 0;
+  } else {
+    score += latest.close < btc.ema20 ? 9 : 0;
+    score += btc.ema20 < btc.ema50 ? 8 : 0;
+    score += btc.ema50SlopeDown ? 8 : 0;
+    score += latest.close < latest.open ? 8 : 0;
+    score += latest.close < previous.close ? 7 : 0;
   }
-  if (btcBelowEma20) {
-    return "SHORT";
+
+  if (distanceFromEma20 >= TRADING_CONFIG.minDistanceFromEma20) {
+    score += 10;
+  } else if (distanceFromEma20 >= TRADING_CONFIG.weakDistanceFromEma20) {
+    score += 7;
+  } else if (distanceFromEma20 >= 0.001) {
+    score += 4;
+  }
+
+  if (Number.isFinite(btcAtrPct) && btcAtrPct >= TRADING_CONFIG.atrPctMin && btcAtrPct <= TRADING_CONFIG.atrPctMax) {
+    score += 15;
+  } else if (Number.isFinite(btcAtrPct) && btcAtrPct >= 0.0075 && btcAtrPct <= 0.03) {
+    score += 8;
+  }
+
+  if (btcVolumePositive && volumeRatio >= 0.8) {
+    score += 10;
+  } else if (btcVolumePositive && volumeRatio >= 0.6) {
+    score += 7;
+  } else if (btcVolumePositive) {
+    score += 4;
+  }
+
+  score += extreme ? 0 : 10;
+  score += gap >= 2 ? 10 : gap >= 1 ? 5 : 2;
+  score += dataFreshness.status === "FRESH" ? 5 : dataFreshness.status === "STALE" ? 2 : 0;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function getGrade(fitness) {
+  if (fitness >= 90) return "A";
+  if (fitness >= 80) return "B";
+  if (fitness >= 70) return "C";
+  if (fitness >= 55) return "D";
+  return "F";
+}
+
+function getDataFreshness(closeAgeHours) {
+  if (closeAgeHours <= TRADING_CONFIG.minFreshHours) {
+    return { status: "FRESH", ageHours: Number(closeAgeHours.toFixed(2)), label: "Dữ liệu mới" };
+  }
+  if (closeAgeHours <= TRADING_CONFIG.maxStaleHours) {
+    return { status: "STALE", ageHours: Number(closeAgeHours.toFixed(2)), label: "Dữ liệu chậm" };
+  }
+  return { status: "OLD", ageHours: Number(closeAgeHours.toFixed(2)), label: "Dữ liệu cũ" };
+}
+
+function getCooldownState(now = new Date()) {
+  const todayRecord = getHistoryRecord(getLocalDateId(now));
+  if (todayRecord && (todayRecord.result === "SL" || todayRecord.result === "LOSS" || Number(todayRecord.netPnl || 0) <= TRADING_CONFIG.dailyStopLossUsdt)) {
+    return { active: true, reason: "Hôm nay đã lỗ hoặc chạm giới hạn lỗ. Kill Switch bật." };
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const previousRecord = getHistoryRecord(getLocalDateId(yesterday));
+  if (previousRecord && (previousRecord.result === "SL" || previousRecord.result === "LOSS" || Number(previousRecord.netPnl || 0) < 0)) {
+    return { active: true, reason: "Ngày liền trước lỗ. Phiên sau chỉ nên quan sát hoặc nhận phiếu rất đẹp." };
+  }
+  return { active: false, reason: "Không có cooldown đang bật." };
+}
+
+function getHardVetoReason(context) {
+  const { dataFreshness, extreme, btcAtrPct, btcVolumePositive, volumeRatio, gap, cooldown, sideScore, oppositeScore } = context;
+  if (dataFreshness.status !== "FRESH") {
+    return `LOCKED_RISK: ${dataFreshness.label}. Không dùng dữ liệu stale/old để bấm 20x.`;
+  }
+  if (!Number.isFinite(btcAtrPct) || btcAtrPct < TRADING_CONFIG.atrPctMin) {
+    return "LOCKED_RISK: BTC ATR% dưới 1.0%. Biến động quá thấp, dễ nhiễu.";
+  }
+  if (btcAtrPct > TRADING_CONFIG.atrPctMax) {
+    return "LOCKED_RISK: BTC ATR% trên 2.0%. Biến động quá loạn cho 20x.";
+  }
+  if (!btcVolumePositive || volumeRatio < 0.6) {
+    return "LOCKED_RISK: volume BTC không đủ tin cậy.";
+  }
+  if (extreme) {
+    return "LOCKED_RISK: nến BTC 4H quá cực đoan. Không chase sau nến lớn.";
+  }
+  if (cooldown.active && sideScore < 8) {
+    return `LOCKED_RISK: ${cooldown.reason}`;
+  }
+  if (gap <= TRADING_CONFIG.sideNoiseGapLimit && Math.max(sideScore, oppositeScore) < 5) {
+    return "LOCKED_RISK: Long/Short quá nhiễu, chưa xác định được bên ít xấu hơn.";
   }
   return "";
 }
 
-function getOvernightState(now = new Date()) {
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  const start = OVERNIGHT_CONFIG.startHour * 60 + OVERNIGHT_CONFIG.startMinute;
-  const end = OVERNIGHT_CONFIG.endHour * 60 + OVERNIGHT_CONFIG.endMinute;
-  const active = OVERNIGHT_CONFIG.enabled && minutes >= start && minutes <= end;
-  return {
-    active,
-    label: OVERNIGHT_CONFIG.label,
-    reason: active ? "Sau 21:45: bật chế độ phiếu qua đêm." : "Ngoài khung sau 21:45: dùng luật ban ngày."
+function getAction(context) {
+  const { fitness, hardVeto } = context;
+  if (hardVeto) {
+    return "LOCKED_RISK";
+  }
+  if (fitness >= 80) {
+    return "EXECUTABLE";
+  }
+  if (fitness >= 70) {
+    return "WAIT_TRIGGER";
+  }
+  return "PLAN_ONLY";
+}
+
+function getActionLabel(action) {
+  const labels = {
+    EXECUTABLE: "Có thể xem xét thủ công",
+    WAIT_TRIGGER: "Chờ trigger, không chase",
+    PLAN_ONLY: "Chỉ lập kế hoạch",
+    LOCKED_RISK: "Khóa rủi ro"
   };
+  return labels[action] || action;
+}
+
+function getRiskProfile(action, grade) {
+  if (action === "LOCKED_RISK") return "LOCKED";
+  if (grade === "A") return "NORMAL_SMALL";
+  if (grade === "B") return "REDUCED";
+  if (grade === "C") return "SMALL_WAIT";
+  if (grade === "D") return "MICRO_PLAN";
+  return "NO_SIZE";
+}
+
+function getMarketRegime(context) {
+  const { latest, previous, btc, distanceFromEma20, btcAtrPct, extreme } = context;
+  if (extreme) return "Expansion mạnh — không chase, chờ retest";
+  if (btcAtrPct < TRADING_CONFIG.atrPctMin) return "Chop/Nhiễu — biến động thấp";
+  if (latest.close > btc.ema20 && btc.ema20 > btc.ema50 && btc.ema50SlopeUp) return "Trend Up — ưu tiên Long hồi";
+  if (latest.close < btc.ema20 && btc.ema20 < btc.ema50 && btc.ema50SlopeDown) return "Trend Down — ưu tiên Short hồi";
+  if (distanceFromEma20 < TRADING_CONFIG.weakDistanceFromEma20) return "Range sát EMA20 — dễ quét hai đầu";
+  if (latest.close > previous.close) return "Range nghiêng Long — chỉ chờ giá đẹp";
+  if (latest.close < previous.close) return "Range nghiêng Short — chỉ chờ giá đẹp";
+  return "Neutral — ưu tiên đứng ngoài";
+}
+
+function getSlogan(context) {
+  const { action, hardVeto } = context;
+  if (hardVeto && hardVeto.includes("cooldown")) {
+    return SLOGANS.COOLDOWN[0];
+  }
+  if (hardVeto && hardVeto.includes("Dữ liệu")) {
+    return SLOGANS.DATA[0];
+  }
+  const pool = SLOGANS[action] || SLOGANS.PLAN_ONLY;
+  return pool[0];
+}
+
+function buildReason(context) {
+  const { action, side, fitness, grade, hardVeto, marketRegime, sideScore, oppositeScore, sideCoreScore } = context;
+  if (hardVeto) {
+    return `${hardVeto} Vẫn dựng phiếu phân tích ${side}, nhưng position mặc định = 0 USDT.`;
+  }
+  if (action === "EXECUTABLE") {
+    return `${side} đạt ${fitness}% · Grade ${grade}. Regime: ${marketRegime}. Score ${sideScore}/8 so với ${oppositeScore}/8, BTC core ${sideCoreScore}/5. Chỉ vào đúng Limit, có TP/SL, không dời SL.`;
+  }
+  if (action === "WAIT_TRIGGER") {
+    return `${side} đạt ${fitness}% · Grade ${grade}. Có thể theo dõi nhưng không chase. Chỉ hợp lệ nếu giá về vùng entry; hết vùng thì bỏ.`;
+  }
+  return `${side} đạt ${fitness}% · Grade ${grade}. Đây là PLAN_ONLY: có bản đồ để nhìn, chưa phải lệnh đáng xuống tiền.`;
 }
 
 function summarizeTechnical(data) {
@@ -814,26 +748,21 @@ function summarizeTechnical(data) {
     avgRange20: roundForTech(data.avgRange20),
     atr14: roundForTech(data.atr14),
     atrPct: Number(((data.atr14 / data.latest.close) * 100).toFixed(3)),
-    volume: Number.isFinite(data.latest.volume) ? roundForTech(data.latest.volume) : 0
+    volume: Number.isFinite(data.latest.volume) ? roundForTech(data.latest.volume) : 0,
+    avgVolume20: roundForTech(data.avgVolume20)
   };
 }
 
 function roundForTech(value) {
-  return Number(value.toFixed(4));
+  return Number(Number(value || 0).toFixed(4));
 }
 
-function buildSession(analysis, tickers, now) {
-  const reviewAt = new Date(now.getTime() + WAIT_MINUTES * 60 * 1000).toISOString();
-  const prices = Object.fromEntries(ORDER_CONFIG.map((config) => [
-    config.symbol,
-    formatPrice(tickers[config.instId], config.decimals)
-  ]));
-  const shouldBuildOrders = analysis.decision === "LONG" || analysis.decision === "SHORT";
-  const positionRatio = getPositionRatio(analysis.ticketType);
-  const orders = shouldBuildOrders
-    ? ORDER_CONFIG.map((config) => buildOrder(config, analysis.decision, tickers[config.instId], positionRatio, analysis.ticketType))
-    : [];
-  const riskTotals = computeRiskTotals(orders);
+function buildSession(analysis, ticker, now) {
+  const reviewAt = new Date(now.getTime() + TRADING_CONFIG.waitMinutes * 60 * 1000).toISOString();
+  const positionUsdt = getPositionUsdt(analysis.action, analysis.grade);
+  const order = buildOrder(analysis, ticker, positionUsdt);
+  const riskTotals = computeRiskTotals([order]);
+  const price = formatPrice(ticker, SYMBOL_CONFIG.decimals);
 
   return {
     version: APP_VERSION,
@@ -843,50 +772,85 @@ function buildSession(analysis, tickers, now) {
     updatedAt: now.toISOString(),
     reviewAt,
     decision: analysis.decision,
+    action: analysis.action,
+    actionLabel: analysis.actionLabel,
     reason: analysis.reason,
-    ticketType: analysis.ticketType || "NONE",
-    ticketLabel: analysis.ticketLabel || "Không có phiếu",
-    riskProfile: analysis.riskProfile || "NONE",
+    ticketType: analysis.ticketType,
+    ticketLabel: analysis.ticketLabel,
+    riskProfile: analysis.riskProfile,
+    fitness: analysis.fitness,
+    grade: analysis.grade,
+    slogan: analysis.slogan,
+    marketRegime: analysis.marketRegime,
     analysis,
-    prices,
-    orders,
+    prices: { BTCUSDT: price },
+    orders: [order],
     rules: {
-      positionUsdt: Number((POSITION_USDT * positionRatio).toFixed(2)),
-      leverage: LEVERAGE,
-      marginUsdt: Number((MARGIN_USDT * positionRatio).toFixed(2)),
-      feeUsdt: FEE_USDT,
-      waitMinutes: WAIT_MINUTES,
-      dailyWin: riskTotals.win || DAILY_WIN,
-      dailyLoss: riskTotals.loss || DAILY_LOSS,
-      stopDayLoss: STOP_DAY_LOSS,
-      positionRatio
+      symbol: SYMBOL_CONFIG.symbol,
+      positionUsdt,
+      leverage: TRADING_CONFIG.leverage,
+      marginUsdt: Number((positionUsdt / TRADING_CONFIG.leverage).toFixed(2)),
+      marginMode: TRADING_CONFIG.marginMode,
+      orderType: TRADING_CONFIG.orderType,
+      waitMinutes: TRADING_CONFIG.waitMinutes,
+      noChasePct: Number((TRADING_CONFIG.noChasePct * 100).toFixed(2)),
+      estimatedWin: riskTotals.win,
+      estimatedLoss: riskTotals.loss,
+      stopDayLoss: TRADING_CONFIG.dailyStopLossUsdt,
+      feeEstimate: riskTotals.fee
     }
   };
 }
 
-function getPositionRatio(ticketType) {
-  return ticketType === "BEST_EFFORT" ? OVERNIGHT_CONFIG.bestEffortPositionRatio : OVERNIGHT_CONFIG.normalPositionRatio;
+function getPositionUsdt(action, grade) {
+  if (action === "LOCKED_RISK") {
+    return 0;
+  }
+  return SIZE_BY_GRADE[grade] ?? 0;
 }
 
-function buildOrder(config, direction, entry, positionRatio = 1, ticketType = "STANDARD") {
-  const takeProfit = direction === "LONG" ? entry * (1 + config.tpPct) : entry * (1 - config.tpPct);
-  const stopLoss = direction === "LONG" ? entry * (1 - config.slPct) : entry * (1 + config.slPct);
-  const netWin = Number(config.netWin) * positionRatio;
-  const netLoss = Number(config.netLoss) * positionRatio;
+function buildOrder(analysis, ticker, positionUsdt) {
+  const gradeParams = TP_SL_BY_GRADE[analysis.grade] || TP_SL_BY_GRADE.F;
+  const direction = analysis.decision;
+  const pullbackPct = analysis.action === "EXECUTABLE" ? 0.0005 : analysis.action === "WAIT_TRIGGER" ? 0.0015 : 0.0025;
+  const entry = direction === "LONG" ? ticker * (1 - pullbackPct) : ticker * (1 + pullbackPct);
+  const takeProfit = direction === "LONG" ? entry * (1 + gradeParams.tp) : entry * (1 - gradeParams.tp);
+  const stopLoss = direction === "LONG" ? entry * (1 - gradeParams.sl) : entry * (1 + gradeParams.sl);
+  const invalidPrice = direction === "LONG" ? entry * (1 + TRADING_CONFIG.noChasePct) : entry * (1 - TRADING_CONFIG.noChasePct);
+  const entryLow = direction === "LONG" ? entry * (1 - 0.001) : entry * (1 - 0.0005);
+  const entryHigh = direction === "LONG" ? entry * (1 + 0.0005) : entry * (1 + 0.001);
+  const grossWin = positionUsdt * gradeParams.tp;
+  const grossLoss = -(positionUsdt * gradeParams.sl);
+  const feeEstimate = positionUsdt > 0 ? positionUsdt * TRADING_CONFIG.feeRate * 2 : 0;
+  const netWin = grossWin - feeEstimate;
+  const netLoss = grossLoss - feeEstimate;
+  const risk = Math.abs(netLoss);
+  const reward = Math.max(0, netWin);
+  const rr = risk > 0 ? reward / risk : 0;
+
   return {
-    symbol: config.symbol,
-    instId: config.instId,
+    symbol: SYMBOL_CONFIG.symbol,
+    instId: SYMBOL_CONFIG.instId,
     direction,
-    entry: formatPrice(entry, config.decimals),
-    tp: formatPrice(takeProfit, config.decimals),
-    sl: formatPrice(stopLoss, config.decimals),
-    tpPct: `${formatPercent(config.tpPct)}`,
-    slPct: `${formatPercent(config.slPct)}`,
-    positionUsdt: formatUsdt(POSITION_USDT * positionRatio),
-    marginUsdt: formatUsdt(MARGIN_USDT * positionRatio),
+    entry: formatPrice(entry, SYMBOL_CONFIG.decimals),
+    entryZone: `${formatPrice(entryLow, SYMBOL_CONFIG.decimals)} – ${formatPrice(entryHigh, SYMBOL_CONFIG.decimals)}`,
+    invalidPrice: formatPrice(invalidPrice, SYMBOL_CONFIG.decimals),
+    tp: formatPrice(takeProfit, SYMBOL_CONFIG.decimals),
+    sl: formatPrice(stopLoss, SYMBOL_CONFIG.decimals),
+    tpPct: formatPercent(gradeParams.tp),
+    slPct: formatPercent(gradeParams.sl),
+    positionUsdt: formatUsdt(positionUsdt),
+    marginUsdt: formatUsdt(positionUsdt / TRADING_CONFIG.leverage),
+    leverage: TRADING_CONFIG.leverage,
+    marginMode: TRADING_CONFIG.marginMode,
+    orderType: TRADING_CONFIG.orderType,
+    feeEstimate: formatUsdt(feeEstimate),
     netWin: formatSigned(netWin),
     netLoss: formatSigned(netLoss),
-    ticketType,
+    rr: Number(rr.toFixed(2)),
+    action: analysis.action,
+    grade: analysis.grade,
+    fitness: analysis.fitness,
     status: STATUS_OPTIONS[0],
     reviewAt: ""
   };
@@ -894,19 +858,21 @@ function buildOrder(config, direction, entry, positionRatio = 1, ticketType = "S
 
 function computeRiskTotals(orders) {
   if (!Array.isArray(orders) || orders.length === 0) {
-    return { win: "", loss: "" };
+    return { win: "+0.00", loss: "+0.00", fee: "0" };
   }
   const win = orders.reduce((sum, order) => sum + Number(order.netWin || 0), 0);
   const loss = orders.reduce((sum, order) => sum + Number(order.netLoss || 0), 0);
-  return { win: formatSigned(win), loss: formatSigned(loss) };
+  const fee = orders.reduce((sum, order) => sum + Number(order.feeEstimate || 0), 0);
+  return { win: formatSigned(win), loss: formatSigned(loss), fee: formatUsdt(fee) };
 }
 
 function formatUsdt(value) {
-  return Number(value).toFixed(Number.isInteger(value) ? 0 : 2);
+  const number = Number(value || 0);
+  return number.toFixed(Number.isInteger(number) ? 0 : 2);
 }
 
 function formatPercent(value) {
-  return `${(value * 100).toFixed(value === 0.025 ? 1 : 0)}%`;
+  return `${(value * 100).toFixed(value < 0.005 ? 2 : value < 0.01 ? 2 : 1)}%`;
 }
 
 function formatPrice(value, decimals) {
@@ -922,110 +888,80 @@ function renderSession() {
   }
 
   const created = formatTime(currentSession.createdAt);
-  const label = currentSession.decision === "NO_TRADE" ? "KHÔNG GIAO DỊCH" : currentSession.decision;
   els.dataStatus.textContent = `Cập nhật ${created}`;
-  els.dataStatus.className = "pill good";
-
-  if (currentSession.decision === "NO_TRADE") {
-    renderNoTrade(currentSession, label);
-    return;
-  }
-
-  renderTicket(currentSession, label);
+  els.dataStatus.className = currentSession.action === "LOCKED_RISK" ? "pill bad" : "pill good";
+  renderTicket(currentSession);
 }
 
-function renderNoTrade(session, label) {
-  els.ticketArea.innerHTML = `
-    <section class="ticket-card decision">
-      <div class="decision-word decision-flat">${escapeHtml(label)}</div>
-      <p class="signal-tier">Cấp tín hiệu: ${escapeHtml(session.analysis.signalTier || "NO_TRADE")}</p>
-      <p class="reason">Lý do: ${escapeHtml(session.reason)}</p>
-      <p>Không rõ hướng thì nghỉ. Tiền mặt cũng là một vị thế.</p>
-      ${renderOvernightStatusPanel(session)}
-      ${renderScoreDetails(session)}
-    </section>
-    ${renderMorningReviewPanel(session)}
-    ${renderPaperTestPanel(session)}
-    ${renderDayResultPanel(session)}
-  `;
-  bindDayResultControls();
-}
-
-function renderTicket(session, label) {
+function renderTicket(session) {
   const actionTime = formatTime(session.reviewAt);
   const decisionClass = getDecisionClass(session);
-  const headline = getTicketHeadline(session, label);
+  const order = session.orders[0];
   els.ticketArea.innerHTML = `
-    <section class="ticket-card decision ${session.ticketType === "BEST_EFFORT" ? "best-effort-card" : ""}">
-      <div class="decision-word ${decisionClass}">${escapeHtml(headline)}</div>
-      <p class="signal-tier">Cấp tín hiệu: ${escapeHtml(session.analysis.signalTier || "VALID")}</p>
+    <section class="ticket-card decision ${session.action === "LOCKED_RISK" ? "locked-card" : ""}">
+      <div class="decision-word ${decisionClass}">${escapeHtml(session.decision)} · ${escapeHtml(session.action)}</div>
+      <div class="fitness-row">
+        <div class="fitness-meter" aria-label="Fitness ${session.fitness}%"><span style="width:${escapeHtml(session.fitness)}%"></span></div>
+        <strong>${escapeHtml(session.fitness)}%</strong>
+        <span class="grade-badge grade-${escapeHtml(session.grade)}">Grade ${escapeHtml(session.grade)}</span>
+      </div>
+      <p class="signal-tier">${escapeHtml(session.actionLabel)} · ${escapeHtml(session.marketRegime)}</p>
       <p class="reason">Lý do: ${escapeHtml(session.reason)}</p>
-      ${renderOvernightStatusPanel(session)}
-      ${renderBestEffortWarning(session)}
+      ${renderSloganBox(session)}
+      ${renderRiskWarning(session)}
       <h3>VIỆC LÀM NGAY</h3>
       <ol class="steps">
-        <li>Nhập 3 lệnh Limit đúng bảng bên dưới nếu tự quyết định tham gia.</li>
-        <li>Chờ đến ${escapeHtml(actionTime)}.</li>
-        <li>Không khớp thì hủy.</li>
-        <li>Không sửa giá. Không đuổi giá. Qua đêm phải có TP/SL.</li>
+        <li>Chỉ dùng ${escapeHtml(SYMBOL_CONFIG.label)} Futures, ký quỹ cô lập, x${escapeHtml(TRADING_CONFIG.leverage)}.</li>
+        <li>Nếu action là EXECUTABLE: chỉ nhập Limit đúng vùng entry, không Market.</li>
+        <li>Nếu action là WAIT_TRIGGER: chờ giá về vùng, không chase.</li>
+        <li>Nếu action là PLAN_ONLY hoặc LOCKED_RISK: xem kế hoạch, ưu tiên không xuống tiền.</li>
+        <li>Chờ đến ${escapeHtml(actionTime)}. Không khớp thì hủy. Không dời SL.</li>
       </ol>
     </section>
 
     <section class="panel">
-      <h3>BẢNG NHẬP OKX</h3>
+      <h3>PHIẾU BTC/USDT 20X</h3>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Cặp</th>
+              <th>Action</th>
               <th>Hướng</th>
+              <th class="price">Entry Zone</th>
               <th class="price">Limit</th>
               <th class="price">TP</th>
               <th class="price">SL</th>
               <th class="price">Vị thế</th>
-              <th class="price">Lãi/Lỗ</th>
+              <th class="price">R:R</th>
             </tr>
           </thead>
-          <tbody>
-            ${session.orders.map(renderOrderRow).join("")}
-          </tbody>
+          <tbody>${renderOrderRow(order)}</tbody>
         </table>
       </div>
+      <p class="muted-text">No Chase: nếu giá đã vượt vùng bất lợi quá ${escapeHtml(session.rules.noChasePct)}% so với Limit, phiếu hết hiệu lực. Giá chạy mất thì để nó chạy.</p>
     </section>
 
     <section class="panel">
-      <h3>TỔNG NGÀY</h3>
+      <h3>RỦI RO ƯỚC TÍNH</h3>
       <div class="risk-grid">
-        <div class="metric"><span>Nếu thắng cả 3</span><strong class="win">${escapeHtml(session.rules.dailyWin)} USDT</strong></div>
-        <div class="metric"><span>Nếu thua cả 3</span><strong class="loss">${escapeHtml(session.rules.dailyLoss)} USDT</strong></div>
-        <div class="metric"><span>Luật dừng</span><strong>Lỗ thực tế chạm ${escapeHtml(session.rules.stopDayLoss)} USDT thì dừng</strong></div>
+        <div class="metric"><span>Position notional</span><strong>${escapeHtml(order.positionUsdt)} USDT</strong></div>
+        <div class="metric"><span>Ký quỹ ước tính</span><strong>${escapeHtml(order.marginUsdt)} USDT</strong></div>
+        <div class="metric"><span>Đòn bẩy</span><strong>x${escapeHtml(order.leverage)} · ${escapeHtml(order.marginMode)}</strong></div>
+        <div class="metric"><span>Nếu TP</span><strong class="win">${escapeHtml(order.netWin)} USDT</strong></div>
+        <div class="metric"><span>Nếu SL</span><strong class="loss">${escapeHtml(order.netLoss)} USDT</strong></div>
+        <div class="metric"><span>Phí ước tính</span><strong>${escapeHtml(order.feeEstimate)} USDT</strong></div>
       </div>
-      <p class="muted-text">Không có lệnh thứ 4. Không sửa giá. Không đuổi giá. ${session.ticketType === "BEST_EFFORT" ? "Phiếu này là NOT_RECOMMENDED, được quyền bỏ qua." : ""}</p>
+      <p class="muted-text">20x không tha lỗi dời SL. Không DCA futures. Không martingale. Không tăng size sau lỗ.</p>
     </section>
 
     <section class="panel">
       <h3>Theo dõi thủ công</h3>
-      <div class="follow-grid">
-        ${session.orders.map((order, index) => renderFollowRow(order, index)).join("")}
-      </div>
-    </section>
-
-    ${renderPaperTestPanel(session)}
-
-    <section class="panel">
-      <h3>Thông số phiếu X5</h3>
-      <div class="rule-grid">
-        <div class="metric"><span>Vị thế</span><strong>${escapeHtml(session.rules.positionUsdt)} USDT / lệnh</strong></div>
-        <div class="metric"><span>Đòn bẩy</span><strong>x${escapeHtml(session.rules.leverage)}</strong></div>
-        <div class="metric"><span>Ký quỹ ước tính</span><strong>${escapeHtml(session.rules.marginUsdt)} USDT / lệnh</strong></div>
-        <div class="metric"><span>Ký quỹ</span><strong>Cô lập</strong></div>
-        <div class="metric"><span>Loại lệnh</span><strong>Limit</strong></div>
-        <div class="metric"><span>Risk profile</span><strong>${escapeHtml(session.riskProfile || "NORMAL")}</strong></div>
-      </div>
-      <p class="muted-text">Phiếu chuẩn giữ 50 USDT/lệnh. BEST_EFFORT giảm còn 25 USDT/lệnh để không biến lệnh tham khảo thành lệnh lớn.</p>
+      <div class="follow-grid">${renderFollowRow(order, 0)}</div>
     </section>
 
     ${renderMorningReviewPanel(session)}
+    ${renderPaperTestPanel(session)}
     ${renderDayResultPanel(session)}
     ${renderScoreDetails(session)}
   `;
@@ -1035,59 +971,64 @@ function renderTicket(session, label) {
 }
 
 function getDecisionClass(session) {
-  if (session.ticketType === "BEST_EFFORT") {
-    return "decision-flat";
-  }
+  if (session.action === "LOCKED_RISK") return "decision-flat";
+  if (session.action === "PLAN_ONLY") return "decision-flat";
   return session.decision === "LONG" ? "decision-long" : "decision-short";
 }
 
-function getTicketHeadline(session, label) {
-  if (session.ticketType === "BEST_EFFORT") {
-    return `PHIẾU THAM KHẢO: ${label}`;
-  }
-  if (session.ticketType === "OVERNIGHT_READY") {
-    return `PHIẾU QUA ĐÊM: ${label}`;
-  }
-  return `HÔM NAY: ${label}`;
-}
-
-function renderOvernightStatusPanel(session) {
-  const analysis = session.analysis || {};
-  const overnight = analysis.overnight || {};
-  const activeText = overnight.active ? "ON" : "OFF";
-  const tone = overnight.active ? "good" : "muted";
+function renderSloganBox(session) {
   return `
-    <div class="overnight-box">
-      <span class="pill ${tone}">OVERNIGHT MODE: ${escapeHtml(activeText)}</span>
-      <p class="muted-text">Khung sau 21:45: ${escapeHtml(overnight.label || OVERNIGHT_CONFIG.label)} · ${escapeHtml(overnight.reason || "Dùng giờ thiết bị.")}</p>
+    <div class="slogan-box">
+      <strong>Lão nhắc:</strong>
+      <p>${escapeHtml(session.slogan)}</p>
     </div>
   `;
 }
 
-function renderBestEffortWarning(session) {
-  if (session.ticketType !== "BEST_EFFORT") {
-    return "";
+function renderRiskWarning(session) {
+  if (session.action === "LOCKED_RISK") {
+    return `
+      <div class="warning-box">
+        <strong>LOCKED_RISK</strong>
+        <p>App vẫn dựng phiếu phân tích để ông nhìn thị trường, nhưng position mặc định bằng 0. Không phá khóa bằng cảm xúc.</p>
+      </div>
+    `;
+  }
+  if (session.action === "PLAN_ONLY") {
+    return `
+      <div class="warning-box">
+        <strong>PLAN_ONLY</strong>
+        <p>Phiếu này không phải tín hiệu đẹp. Dùng để học bối cảnh, không dùng để ép lệnh.</p>
+      </div>
+    `;
+  }
+  if (session.action === "WAIT_TRIGGER") {
+    return `
+      <div class="warning-box soft">
+        <strong>WAIT_TRIGGER</strong>
+        <p>Chỉ hợp lệ nếu giá về vùng entry. Nếu giá chạy khỏi vùng, phiếu hết hạn. Không chase.</p>
+      </div>
+    `;
   }
   return `
-    <div class="warning-box">
-      <strong>BEST_EFFORT / NOT_RECOMMENDED</strong>
-      <p>Đây là phiếu tham khảo khi sau 21:45 chưa có tín hiệu chuẩn. App chỉ dựng phương án ít xấu nhất theo dữ liệu hiện tại. Có phiếu không có nghĩa là phải vào lệnh.</p>
+    <div class="warning-box soft">
+      <strong>EXECUTABLE</strong>
+      <p>Được phép xem xét thủ công, không phải lệnh bắt buộc. Vào nhỏ, đúng Limit, đúng SL.</p>
     </div>
   `;
 }
 
 function renderMorningReviewPanel(session) {
-  const now = new Date();
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  const isMorning = minutes >= 5 * 60 && minutes <= 10 * 60 + 30;
-  const isOvernightTicket = session.ticketType === "OVERNIGHT_READY" || session.ticketType === "BEST_EFFORT";
-  if (!isMorning && !isOvernightTicket) {
-    return "";
-  }
   return `
     <section class="panel morning-panel">
       <h3>MORNING REVIEW</h3>
-      <p class="muted-text">Sáng mở app: kiểm tra lệnh tối qua trên OKX, cập nhật trạng thái TP / SL / Không khớp / Tự đóng, rồi lưu Kết quả ngày. Nếu lỗ, phiên sau chỉ nhận kèo 8/8.</p>
+      <p class="muted-text">Sáng hôm sau ghi lại: có vào đúng kế hoạch không, TP/SL/Manual Close/Not Filled/Still Open, PnL tay, có dời SL không, có FOMO không. Nếu lỗ hoặc phá luật, bật cooldown cho phiên tiếp theo.</p>
+      <div class="check-grid">
+        <span>□ Vào đúng vùng entry</span>
+        <span>□ Không dời SL</span>
+        <span>□ Không vào lại sau SL</span>
+        <span>□ Không gồng lỗ</span>
+      </div>
     </section>
   `;
 }
@@ -1096,12 +1037,14 @@ function renderOrderRow(order) {
   return `
     <tr>
       <td>${escapeHtml(order.symbol)}</td>
+      <td>${escapeHtml(order.action)}</td>
       <td>${escapeHtml(order.direction)}</td>
+      <td class="price">${escapeHtml(order.entryZone)}</td>
       <td class="price">${escapeHtml(order.entry)}</td>
-      <td class="price">${escapeHtml(order.tp)}</td>
-      <td class="price">${escapeHtml(order.sl)}</td>
-      <td class="price">${escapeHtml(order.positionUsdt || POSITION_USDT)} USDT</td>
-      <td class="price"><span class="win">${escapeHtml(order.netWin)}</span> / <span class="loss">${escapeHtml(order.netLoss)}</span></td>
+      <td class="price">${escapeHtml(order.tp)} <small>${escapeHtml(order.tpPct)}</small></td>
+      <td class="price">${escapeHtml(order.sl)} <small>${escapeHtml(order.slPct)}</small></td>
+      <td class="price">${escapeHtml(order.positionUsdt)} USDT</td>
+      <td class="price">${escapeHtml(order.rr)}R</td>
     </tr>
   `;
 }
@@ -1111,7 +1054,7 @@ function renderFollowRow(order, index) {
   return `
     <div class="follow-row">
       <div class="follow-head">
-        <strong>${escapeHtml(order.symbol)}</strong>
+        <strong>${escapeHtml(order.symbol)} · ${escapeHtml(order.direction)}</strong>
         <span class="pill muted">${escapeHtml(order.status)}</span>
       </div>
       <div class="follow-actions">
@@ -1129,11 +1072,12 @@ function renderDayResultPanel(session) {
   const selectedResult = record ? record.result : "NONE";
   const netPnl = record && Number.isFinite(Number(record.netPnl)) ? String(record.netPnl) : "";
   const note = record ? record.note : "";
+  const emotion = record ? record.emotion || "" : "";
 
   return `
     <section class="panel day-result-panel">
       <h3>Kết quả ngày</h3>
-      <p class="muted-text">App không đọc tài khoản OKX. Ông tự chốt kết quả để so sánh 7 ngày và 30 ngày.</p>
+      <p class="muted-text">App không đọc tài khoản OKX. Ông tự ghi kết quả để app còn biết khi nào phải khóa tay.</p>
       <div class="form-grid">
         <label>
           <span>Kết quả</span>
@@ -1147,10 +1091,16 @@ function renderDayResultPanel(session) {
           <span>Net PnL USDT</span>
           <input id="dayNetPnlInput" type="number" step="0.01" inputmode="decimal" value="${escapeHtml(netPnl)}" placeholder="0" />
         </label>
+        <label>
+          <span>Cảm xúc lúc vào lệnh</span>
+          <select id="dayEmotionSelect">
+            ${["", "Bình tĩnh", "FOMO", "Trả thù", "Vào cho có", "Đúng kế hoạch"].map((item) => `<option value="${escapeHtml(item)}" ${item === emotion ? "selected" : ""}>${escapeHtml(item || "Chưa ghi")}</option>`).join("")}
+          </select>
+        </label>
       </div>
       <label class="full-label">
-        <span>Ghi chú</span>
-        <textarea id="dayNoteInput" rows="3" maxlength="280" placeholder="Ví dụ: đúng luật, bỏ qua vì không rõ hướng, hoặc tự đóng sớm.">${escapeHtml(note)}</textarea>
+        <span>Ghi chú bài học</span>
+        <textarea id="dayNoteInput" rows="3" maxlength="360" placeholder="Ví dụ: đợi đúng trigger, bỏ qua vì PLAN_ONLY, hoặc phá luật dời SL.">${escapeHtml(note)}</textarea>
       </label>
       <button id="saveDayResultBtn" class="ghost-btn" type="button">Lưu kết quả ngày</button>
     </section>
@@ -1164,23 +1114,23 @@ function renderScoreDetails(session) {
     <details>
       <summary>Chi tiết kỹ thuật 4H</summary>
       <div class="score-grid">
-        <div class="metric"><span>Long score</span><strong>${analysis.longScore}/8</strong></div>
-        <div class="metric"><span>Short score</span><strong>${analysis.shortScore}/8</strong></div>
-        <div class="metric"><span>Cấp tín hiệu</span><strong>${escapeHtml(analysis.signalTier || "NO_TRADE")}</strong></div>
+        <div class="metric"><span>Fitness</span><strong>${escapeHtml(session.fitness)}%</strong></div>
+        <div class="metric"><span>Grade</span><strong>${escapeHtml(session.grade)}</strong></div>
+        <div class="metric"><span>Long / Short</span><strong>${analysis.longScore}/8 · ${analysis.shortScore}/8</strong></div>
         <div class="metric"><span>Nến BTC đã đóng</span><strong>${escapeHtml(closedAt)}</strong></div>
+        <div class="metric"><span>Data</span><strong>${escapeHtml(analysis.dataFreshness.status)} · ${escapeHtml(analysis.dataFreshness.ageHours)}h</strong></div>
+        <div class="metric"><span>Regime</span><strong>${escapeHtml(analysis.marketRegime)}</strong></div>
       </div>
       <ul class="tech-list">
-        <li>Luật V1.2.4: ban ngày 5–6/8 là WATCH, từ 7/8 mới lập phiếu; sau 21:45 bật Overnight Relaxed Mode.</li>
-        <li>Overnight: từ 21:45, 6/8 + gap >= 2 + BTC core >= 4/5 + EMA20 distance >= 0.25% thì có OVERNIGHT_READY.</li>
-        <li>Best Effort: sau 21:45 nếu chưa có tín hiệu chuẩn, app dựng 01 phiếu tham khảo NOT_RECOMMENDED, giảm vốn 50%, bắt buộc TP/SL.</li>
-        <li>Sau ngày lỗ: chỉ nhận kèo 8/8; không dùng Overnight/Best Effort để gỡ.</li>
-        <li>BTC close ${analysis.btc.close}, EMA20 ${analysis.btc.ema20}, EMA50 ${analysis.btc.ema50}, EMA50 slope ${escapeHtml(analysis.btc.ema50Slope)}</li>
-        <li>ETH close ${analysis.eth.close}, EMA20 ${analysis.eth.ema20}, EMA50 ${analysis.eth.ema50}, EMA50 slope ${escapeHtml(analysis.eth.ema50Slope)}</li>
-        <li>BTC core Long/Short: ${analysis.filters.btcLongCoreScore}/5 · ${analysis.filters.btcShortCoreScore}/5. Chuẩn ngày cần ${analysis.filters.btcLeadMinScore}/5; Overnight cần ${OVERNIGHT_CONFIG.btcLeadMinScore}/5.</li>
-        <li>Khoảng cách BTC tới EMA20: ${analysis.filters.distanceFromEma20}% · chuẩn ngày ${analysis.filters.minDistanceFromEma20}% · overnight ${analysis.filters.minOvernightDistanceFromEma20}%.</li>
-        <li>V3.3 safety gate: BTC ATR% ${analysis.filters.btcAtrPct}% · vùng hợp lệ ${analysis.filters.atrPctMin}% đến ${analysis.filters.atrPctMax}% · volume hợp lệ: ${analysis.filters.btcVolumePositive ? "Có" : "Không"} · nến BTC: ${escapeHtml(analysis.filters.btcLastCandle)}.</li>
-        <li>Cooldown sau ngày lỗ: ${analysis.filters.cooldownActive ? "Đang bật" : "Không bật"}. ${escapeHtml(analysis.filters.cooldownReason)}</li>
-        <li>Extreme candle: ${analysis.extreme ? "Có" : "Không"}. Public market data lấy mới, không cache API OKX.</li>
+        <li>V1.3 chỉ dùng BTC/USDT Futures, Isolated, x20, Limit, không auto trade, không private API.</li>
+        <li>Always Plan: app luôn dựng 01 phiếu phân tích BTC. Action quyết định có nên xuống tiền hay chỉ xem.</li>
+        <li>Fitness 100 điểm gồm: xu hướng 25, momentum 15, EMA distance 10, ATR 15, volume 10, không extreme 10, Long/Short gap 10, data fresh 5.</li>
+        <li>Grade A/B/C/D/F tự co vị thế: 50 / 35 / 25 / 15 / 0 USDT. LOCKED_RISK luôn 0 USDT.</li>
+        <li>BTC close ${analysis.btc.close}, EMA20 ${analysis.btc.ema20}, EMA50 ${analysis.btc.ema50}, EMA50 slope ${escapeHtml(analysis.btc.ema50Slope)}.</li>
+        <li>BTC core Long/Short: ${analysis.btcLongCoreScore}/5 · ${analysis.btcShortCoreScore}/5. Khoảng cách EMA20: ${analysis.filters.distanceFromEma20}%.</li>
+        <li>ATR% ${analysis.filters.btcAtrPct}% · vùng chuẩn ${analysis.filters.atrPctMin}% đến ${analysis.filters.atrPctMax}% · volume ratio ${analysis.filters.volumeRatio}x.</li>
+        <li>Cooldown: ${analysis.filters.cooldownActive ? "Đang bật" : "Không bật"}. ${escapeHtml(analysis.filters.cooldownReason)}</li>
+        <li>Extreme candle: ${analysis.extreme ? "Có" : "Không"}. Hard veto: ${escapeHtml(analysis.hardVeto || "Không")}</li>
       </ul>
     </details>
   `;
@@ -1223,9 +1173,9 @@ function updateOrderStatus(index, status) {
   order.status = status;
 
   if (status === "Đã đặt Limit") {
-    order.reviewAt = new Date(now.getTime() + WAIT_MINUTES * 60 * 1000).toISOString();
+    order.reviewAt = new Date(now.getTime() + TRADING_CONFIG.waitMinutes * 60 * 1000).toISOString();
   } else if (status === "Đã khớp") {
-    order.reviewAt = new Date(now.getTime() + REVIEW_AFTER_FILL_MINUTES * 60 * 1000).toISOString();
+    order.reviewAt = new Date(now.getTime() + TRADING_CONFIG.reviewAfterFillMinutes * 60 * 1000).toISOString();
   } else if (status === "Không khớp đã hủy" || status === "Đã TP" || status === "Đã SL") {
     order.reviewAt = "";
   }
@@ -1245,12 +1195,13 @@ function saveDayResult() {
   const resultSelect = document.querySelector("#dayResultSelect");
   const pnlInput = document.querySelector("#dayNetPnlInput");
   const noteInput = document.querySelector("#dayNoteInput");
+  const emotionSelect = document.querySelector("#dayEmotionSelect");
   const result = resultSelect ? resultSelect.value : "NONE";
   const netPnlRaw = pnlInput ? pnlInput.value.trim() : "";
   const netPnl = netPnlRaw === "" ? 0 : Number(netPnlRaw);
 
   if (!Number.isFinite(netPnl)) {
-    showMessage("Chưa lưu kết quả ngày", "Net PnL phải là số, ví dụ 4.85 hoặc -3.40.", "bad");
+    showMessage("Chưa lưu kết quả ngày", "Net PnL phải là số, ví dụ 1.25 hoặc -0.75.", "bad");
     return;
   }
 
@@ -1260,24 +1211,24 @@ function saveDayResult() {
   record.result = result;
   record.netPnl = Number(netPnl.toFixed(2));
   record.note = noteInput ? noteInput.value.trim() : "";
+  record.emotion = emotionSelect ? emotionSelect.value : "";
   record.finalStatus = resolveFinalStatus(record.decision, result);
   record.updatedAt = now;
 
   saveHistory(upsertHistoryRecord(record));
-  showMessage("Đã lưu kết quả ngày", "Lịch sử đã cập nhật để so sánh 7 ngày và 30 ngày.", "");
+  showMessage("Đã lưu kết quả ngày", netPnl < 0 ? "Đã ghi lỗ. Phiên sau phải để kỷ luật ngồi ghế lái." : "Lịch sử đã cập nhật. Thắng nhỏ cũng phải giữ luật.", netPnl < 0 ? "bad" : "");
   renderHistory();
 }
 
 function resolveFinalStatus(decision, result) {
   if (result === "NONE") {
-    return decision === "NO_TRADE" ? "NO_TRADE" : "OPEN";
+    return "OPEN";
   }
-  if (decision === "NO_TRADE" && result === "SKIPPED") {
+  if (result === "SKIPPED" || result === "NOT_FILLED") {
     return "NO_TRADE";
   }
   return "DONE";
 }
-
 
 async function toggleWatchMode() {
   if (isWatchModeOn) {
@@ -1399,10 +1350,7 @@ function updateWatchStatus(message) {
 }
 
 function maybeAlertSignal(session) {
-  if (!session || !(session.decision === "LONG" || session.decision === "SHORT")) {
-    return false;
-  }
-  if (session.ticketType === "BEST_EFFORT") {
+  if (!session || session.action !== "EXECUTABLE") {
     return false;
   }
   const signature = buildAlertSignature(session);
@@ -1417,7 +1365,7 @@ function maybeAlertSignal(session) {
 }
 
 function buildAlertSignature(session) {
-  return [session.dayId, session.decision, session.ticketType || "STANDARD", session.analysis.closedAt, session.analysis.signalTier].join("|");
+  return [session.dayId, session.decision, session.action, session.grade, session.analysis.closedAt].join("|");
 }
 
 function hasAlertedSignature(signature) {
@@ -1427,11 +1375,10 @@ function hasAlertedSignature(signature) {
 function startSignalAlert(session, paperTest) {
   stopSignalAlert({ keepMessage: true });
   const direction = session.decision || "TEST";
-  const tier = session.analysis && session.analysis.signalTier ? session.analysis.signalTier : "TEST_ALERT";
-  const title = direction === "TEST" ? "TEST CHUÔNG/RUNG" : `CÓ TÍN HIỆU ${direction}`;
+  const title = direction === "TEST" ? "TEST CHUÔNG/RUNG" : `BTC 20X EXECUTABLE ${direction}`;
   const body = direction === "TEST"
     ? "Nếu nghe chuông hoặc máy rung là Watch Mode dùng được trên thiết bị này."
-    : `${tier}. Đã tạo giấy thử: giả định vào lệnh thành công để theo dõi TP/SL. Mở app xem kết quả giả lập.`;
+    : `Fitness ${session.fitness}% · Grade ${session.grade}. Đã tạo giấy thử TP/SL giả lập. Không phải lệnh tự động.`;
 
   showMessage(title, body, direction === "TEST" ? "" : "alert");
   notifySignal(title, body);
@@ -1442,6 +1389,8 @@ function startSignalAlert(session, paperTest) {
 function testSignalAlert() {
   const fakeSession = {
     decision: "TEST",
+    fitness: 100,
+    grade: "A",
     analysis: { signalTier: "TEST_ALERT" }
   };
   startSignalAlert(fakeSession, null);
@@ -1551,9 +1500,9 @@ function recordAlertLog(session, signature, paperTest) {
     createdAt: now,
     dayId: session.dayId,
     decision: session.decision,
-    signalTier: session.analysis.signalTier,
-    longScore: session.analysis.longScore,
-    shortScore: session.analysis.shortScore,
+    action: session.action,
+    grade: session.grade,
+    fitness: session.fitness,
     closedAt: session.analysis.closedAt,
     paperTestId: paperTest ? paperTest.id : ""
   };
@@ -1585,7 +1534,9 @@ function createPaperTestFromSession(session, signature) {
     createdAt: now,
     updatedAt: now,
     direction: session.decision,
-    signalTier: session.analysis.signalTier,
+    action: session.action,
+    grade: session.grade,
+    fitness: session.fitness,
     finalStatus: "OPEN",
     note: "Giấy thử giả định vào lệnh thành công tại giá Limit khi báo động. Đây không phải lệnh thật.",
     orders: session.orders.map((order) => ({
@@ -1622,12 +1573,7 @@ function updateOpenPaperTests(tickers, now) {
     const openCount = orders.filter((order) => order.result === "OPEN").length;
     const finalStatus = openCount === 0 ? "DONE" : ageHours >= PAPER_TEST_MAX_HOURS ? "EXPIRED" : "OPEN";
     changed = true;
-    return {
-      ...test,
-      orders,
-      finalStatus,
-      updatedAt: now.toISOString()
-    };
+    return { ...test, orders, finalStatus, updatedAt: now.toISOString() };
   });
   if (changed) {
     savePaperTests(updatedTests);
@@ -1642,7 +1588,6 @@ function updatePaperOrder(order, tickers, now) {
   if (!Number.isFinite(last) || last <= 0) {
     return order;
   }
-  const entry = Number(order.entry);
   const tp = Number(order.tp);
   const sl = Number(order.sl);
   let result = "OPEN";
@@ -1669,13 +1614,12 @@ function updatePaperOrder(order, tickers, now) {
       resolvedAt = now.toISOString();
     }
   }
-  if (result === "OPEN" && Number.isFinite(entry)) {
+  if (result === "OPEN") {
     status = "Giả định vào lệnh thành công";
   }
-  const config = ORDER_CONFIG.find((item) => item.instId === order.instId);
   return {
     ...order,
-    lastPrice: config ? formatPrice(last, config.decimals) : String(last),
+    lastPrice: formatPrice(last, SYMBOL_CONFIG.decimals),
     status,
     result,
     resolvedAt: resolvedAt || order.resolvedAt || ""
@@ -1706,7 +1650,7 @@ function getPaperTest(id) {
 }
 
 function getPaperTestForSession(session) {
-  if (!session || !(session.decision === "LONG" || session.decision === "SHORT")) {
+  if (!session || session.action !== "EXECUTABLE") {
     return loadPaperTests()[0] || null;
   }
   return getPaperTest(buildAlertSignature(session)) || loadPaperTests()[0] || null;
@@ -1738,10 +1682,10 @@ function renderPaperTestPanel(session) {
   return `
     <section class="panel paper-panel">
       <h3>${escapeHtml(title)}</h3>
-      <p class="muted-text">Giả định vào lệnh thành công tại giá Limit lúc app báo động. Dùng để kiểm tra hiệu quả tín hiệu khi ông chưa muốn vào lệnh thật. App chỉ dùng giá last công khai mỗi lần quét, có thể bỏ lỡ râu nến.</p>
+      <p class="muted-text">Giả định vào lệnh thành công tại giá Limit lúc app báo động EXECUTABLE. Đây không phải lệnh thật, không đọc tài khoản OKX.</p>
       <div class="summary-grid">
         <div class="metric"><span>Hướng thử</span><strong>${escapeHtml(test.direction)}</strong></div>
-        <div class="metric"><span>Trạng thái</span><strong>${escapeHtml(test.finalStatus)}</strong></div>
+        <div class="metric"><span>Fitness</span><strong>${escapeHtml(test.fitness || "")}% · Grade ${escapeHtml(test.grade || "")}</strong></div>
         <div class="metric"><span>Còn mở</span><strong>${openCount}/${test.orders.length}</strong></div>
         <div class="metric"><span>PnL giả lập</span><strong class="${pnl >= 0 ? "win" : "loss"}">${formatSigned(pnl)} USDT</strong></div>
       </div>
@@ -1780,11 +1724,9 @@ function renderAlertLogPanel() {
   const tests = loadPaperTests();
   return `
     <section class="panel">
-      <h3>Log cảnh báo một lần</h3>
-      <p class="muted-text">Mỗi tín hiệu LONG/SHORT chỉ báo động một lần theo ngày + hướng + nến 4H đã đóng. Những vòng quét sau không hú lại cùng tín hiệu.</p>
-      <div class="history-actions">
-        <button id="clearAlertLogBtn" class="ghost-btn danger" type="button">Xóa log cảnh báo</button>
-      </div>
+      <h3>Log cảnh báo EXECUTABLE</h3>
+      <p class="muted-text">Watch Mode chỉ hú khi action = EXECUTABLE. PLAN_ONLY, WAIT_TRIGGER và LOCKED_RISK không hú để tránh ép lệnh.</p>
+      <div class="history-actions"><button id="clearAlertLogBtn" class="ghost-btn danger" type="button">Xóa log cảnh báo</button></div>
       ${log.length === 0 ? `<p class="muted-text">Chưa có cảnh báo nào.</p>` : `
         <div class="history-list">
           ${log.map((item) => {
@@ -1794,7 +1736,7 @@ function renderAlertLogPanel() {
               <article class="history-item">
                 <div>
                   <strong>${escapeHtml(formatDateTime(item.createdAt))}</strong>
-                  <p class="muted-text">${escapeHtml(item.decision)} · ${escapeHtml(item.signalTier)} · Long/Short ${escapeHtml(item.longScore)}/${escapeHtml(item.shortScore)}</p>
+                  <p class="muted-text">${escapeHtml(item.decision)} · ${escapeHtml(item.action)} · ${escapeHtml(item.fitness)}% · Grade ${escapeHtml(item.grade)}</p>
                 </div>
                 <div class="history-result">
                   <span class="pill muted">${test ? escapeHtml(test.finalStatus) : "Đã báo"}</span>
@@ -1855,24 +1797,6 @@ function getHistoryRecord(id) {
   return loadHistory().find((item) => item.id === id || item.date === id) || null;
 }
 
-function getLossCooldownState() {
-  if (!SIGNAL_CONFIG.lossCooldownEnabled) {
-    return { active: false, reason: "Cooldown tắt" };
-  }
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const record = getHistoryRecord(getLocalDateId(yesterday));
-  if (!record) {
-    return { active: false, reason: "Không có ngày lỗ liền trước" };
-  }
-  const pnl = Number(record.netPnl || 0);
-  const active = record.result === "LOSS" || pnl <= Number(DAILY_LOSS);
-  return {
-    active,
-    reason: active ? "Ngày liền trước là LOSS hoặc net PnL <= -3.40" : "Ngày liền trước không kích hoạt cooldown"
-  };
-}
-
 function upsertHistoryFromSession(session, existing) {
   const record = buildHistoryRecord(session, existing);
   saveHistory(upsertHistoryRecord(record));
@@ -1896,17 +1820,20 @@ function buildHistoryRecord(session, existing) {
     date: session.date || session.dayId || getLocalDateId(session.createdAt),
     time: formatClock(session.createdAt),
     decision: session.decision,
-    signalTier: session.analysis.signalTier || "NO_TRADE",
+    action: session.action,
+    actionLabel: session.actionLabel,
+    signalTier: session.analysis.signalTier || session.action,
     longScore: session.analysis.longScore,
     shortScore: session.analysis.shortScore,
+    fitness: session.fitness,
+    grade: session.grade,
     btcPrice: session.prices ? session.prices.BTCUSDT : "",
-    ethPrice: session.prices ? session.prices.ETHUSDT : "",
-    okbPrice: session.prices ? session.prices.OKBUSDT : "",
     tickets: Array.isArray(session.orders) ? session.orders : [],
-    finalStatus: previous.finalStatus || (session.decision === "NO_TRADE" ? "NO_TRADE" : "OPEN"),
+    finalStatus: previous.finalStatus || "OPEN",
     result: previous.result || "NONE",
     netPnl: Number.isFinite(Number(previous.netPnl)) ? Number(previous.netPnl) : 0,
     note: previous.note || "",
+    emotion: previous.emotion || "",
     createdAt: previous.createdAt || session.createdAt,
     updatedAt: session.updatedAt || new Date().toISOString()
   };
@@ -1939,9 +1866,7 @@ function renderHistory() {
     ${renderAlertLogPanel()}
     <section class="panel">
       <h3>Danh sách ngày</h3>
-      <div class="history-list">
-        ${sorted.map(renderHistoryItem).join("")}
-      </div>
+      <div class="history-list">${sorted.map(renderHistoryItem).join("")}</div>
     </section>
   `;
   bindHistoryButtons();
@@ -1953,10 +1878,10 @@ function renderStatsPanel(title, stats) {
       <h3>${escapeHtml(title)}</h3>
       <div class="summary-grid">
         <div class="metric"><span>Có dữ liệu</span><strong>${stats.total}</strong></div>
+        <div class="metric"><span>EXEC / WAIT / PLAN / LOCK</span><strong>${stats.execDays} / ${stats.waitDays} / ${stats.planDays} / ${stats.lockDays}</strong></div>
         <div class="metric"><span>LONG / SHORT</span><strong>${stats.longDays} / ${stats.shortDays}</strong></div>
-        <div class="metric"><span>NO TRADE</span><strong>${stats.noTradeDays}</strong></div>
+        <div class="metric"><span>Fitness TB</span><strong>${stats.avgFitness}%</strong></div>
         <div class="metric"><span>Tổng Net PnL</span><strong class="${stats.pnl >= 0 ? "win" : "loss"}">${formatSigned(stats.pnl)} USDT</strong></div>
-        <div class="metric"><span>Win / Loss</span><strong>${stats.winDays} / ${stats.lossDays}</strong></div>
         <div class="metric"><span>Kỷ luật ghi kết quả</span><strong>${stats.doneDays}/${stats.total}</strong></div>
       </div>
     </section>
@@ -1964,14 +1889,13 @@ function renderStatsPanel(title, stats) {
 }
 
 function renderHistoryItem(item) {
-  const decisionLabel = item.decision === "NO_TRADE" ? "KHÔNG GIAO DỊCH" : item.decision;
   const resultLabel = getResultLabel(item.result);
   const pnl = Number(item.netPnl || 0);
   return `
     <article class="history-item">
       <div>
         <strong>${escapeHtml(formatDateShort(item.date))}</strong>
-        <p class="muted-text">${escapeHtml(item.time || "Đã lưu")} · ${escapeHtml(decisionLabel)} · ${escapeHtml(item.signalTier || "NO_TRADE")} · ${escapeHtml(item.longScore)}/${escapeHtml(item.shortScore)}</p>
+        <p class="muted-text">${escapeHtml(item.time || "Đã lưu")} · ${escapeHtml(item.decision)} · ${escapeHtml(item.action || item.signalTier || "PLAN_ONLY")} · ${escapeHtml(item.fitness || 0)}% · Grade ${escapeHtml(item.grade || "")}</p>
         ${item.note ? `<p>${escapeHtml(item.note)}</p>` : ""}
       </div>
       <div class="history-result">
@@ -1991,15 +1915,17 @@ function computeStats(history, days) {
   });
   const total = records.length;
   const doneDays = records.filter((item) => item.finalStatus === "DONE" || item.finalStatus === "NO_TRADE").length;
+  const avgFitness = total ? Math.round(records.reduce((sum, item) => sum + Number(item.fitness || 0), 0) / total) : 0;
   return {
     total,
     longDays: records.filter((item) => item.decision === "LONG").length,
     shortDays: records.filter((item) => item.decision === "SHORT").length,
-    noTradeDays: records.filter((item) => item.decision === "NO_TRADE").length,
+    execDays: records.filter((item) => item.action === "EXECUTABLE").length,
+    waitDays: records.filter((item) => item.action === "WAIT_TRIGGER").length,
+    planDays: records.filter((item) => item.action === "PLAN_ONLY").length,
+    lockDays: records.filter((item) => item.action === "LOCKED_RISK").length,
+    avgFitness,
     pnl: Number(records.reduce((sum, item) => sum + Number(item.netPnl || 0), 0).toFixed(2)),
-    winDays: records.filter((item) => item.result === "WIN").length,
-    lossDays: records.filter((item) => item.result === "LOSS").length,
-    openDays: total - doneDays,
     doneDays
   };
 }
@@ -2009,18 +1935,10 @@ function bindHistoryButtons() {
   const importButton = document.querySelector("#importHistoryBtn");
   const clearButton = document.querySelector("#clearHistoryBtn");
   const clearAlertLogButton = document.querySelector("#clearAlertLogBtn");
-  if (exportButton) {
-    exportButton.addEventListener("click", exportHistory);
-  }
-  if (importButton) {
-    importButton.addEventListener("click", () => els.historyImportInput.click());
-  }
-  if (clearButton) {
-    clearButton.addEventListener("click", clearHistory);
-  }
-  if (clearAlertLogButton) {
-    clearAlertLogButton.addEventListener("click", clearAlertLog);
-  }
+  if (exportButton) exportButton.addEventListener("click", exportHistory);
+  if (importButton) importButton.addEventListener("click", () => els.historyImportInput.click());
+  if (clearButton) clearButton.addEventListener("click", clearHistory);
+  if (clearAlertLogButton) clearAlertLogButton.addEventListener("click", clearAlertLog);
 }
 
 function exportHistory() {
@@ -2039,17 +1957,12 @@ function exportHistory() {
 async function importHistoryFile(event) {
   const file = event.target.files && event.target.files[0];
   event.target.value = "";
-  if (!file) {
-    return;
-  }
+  if (!file) return;
 
   try {
     const text = await file.text();
     const imported = JSON.parse(text);
-    if (!Array.isArray(imported)) {
-      throw new Error("History file must be an array");
-    }
-
+    if (!Array.isArray(imported)) throw new Error("History file must be an array");
     const current = loadHistory();
     const merged = mergeHistory(current, imported.map(normalizeImportedRecord));
     saveHistory(merged);
@@ -2071,17 +1984,20 @@ function normalizeImportedRecord(item) {
     date: item.date,
     time: item.time || "Đã nhập",
     decision: item.decision,
-    signalTier: item.signalTier || "NO_TRADE",
+    action: item.action || item.signalTier || "PLAN_ONLY",
+    actionLabel: item.actionLabel || "Chỉ lập kế hoạch",
+    signalTier: item.signalTier || item.action || "PLAN_ONLY",
     longScore: Number(item.longScore || 0),
     shortScore: Number(item.shortScore || 0),
+    fitness: Number(item.fitness || 0),
+    grade: item.grade || "",
     btcPrice: item.btcPrice || "",
-    ethPrice: item.ethPrice || "",
-    okbPrice: item.okbPrice || "",
     tickets: Array.isArray(item.tickets) ? item.tickets : [],
     finalStatus: item.finalStatus || "OPEN",
     result: item.result || "NONE",
     netPnl: Number.isFinite(Number(item.netPnl)) ? Number(item.netPnl) : 0,
     note: item.note || "",
+    emotion: item.emotion || "",
     createdAt: item.createdAt || new Date().toISOString(),
     updatedAt: item.updatedAt || new Date().toISOString()
   };
@@ -2111,10 +2027,7 @@ function clearHistory() {
 function showMessage(title, body, tone) {
   const toneClass = tone === "bad" ? "bad-box" : tone === "alert" ? "alert-box" : "";
   els.messageArea.className = `message-card ${toneClass}`;
-  els.messageArea.innerHTML = `
-    <h3>${escapeHtml(title)}</h3>
-    <p>${escapeHtml(body)}</p>
-  `;
+  els.messageArea.innerHTML = `<h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p>`;
 }
 
 function hideMessage() {
@@ -2136,20 +2049,12 @@ function formatClock(iso) {
 
 function formatDateTime(iso) {
   const date = new Date(iso);
-  return date.toLocaleString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+  return date.toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function formatDateShort(dateId) {
   const date = parseDateId(dateId);
-  if (!date) {
-    return "Đã lưu";
-  }
+  if (!date) return "Đã lưu";
   return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
@@ -2167,9 +2072,7 @@ function startOfLocalDay(date) {
 
 function parseDateId(dateId) {
   const match = String(dateId || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
@@ -2196,15 +2099,12 @@ function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
     return;
   }
-
   window.addEventListener("load", async () => {
     try {
       const registration = await navigator.serviceWorker.register("/service-worker.js");
       registration.addEventListener("updatefound", () => {
         const newWorker = registration.installing;
-        if (!newWorker) {
-          return;
-        }
+        if (!newWorker) return;
         newWorker.addEventListener("statechange", () => {
           if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
             newWorker.postMessage({ type: "SKIP_WAITING" });
@@ -2212,9 +2112,7 @@ function registerServiceWorker() {
         });
       });
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (hasReloadedForServiceWorker) {
-          return;
-        }
+        if (hasReloadedForServiceWorker) return;
         hasReloadedForServiceWorker = true;
         window.location.reload();
       });

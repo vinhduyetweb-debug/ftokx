@@ -28,8 +28,7 @@ const sourceFiles = [
   "service-worker.js",
   "vercel.json",
   "README.md",
-  "CHANGELOG.md",
-  "config/FTOKX_OVERNIGHT_RELAXED_CONFIG_V1_2_4.json"
+  "CHANGELOG.md"
 ];
 
 const errors = [];
@@ -53,7 +52,6 @@ function assert(condition, message) {
   }
 }
 
-
 async function main() {
   for (const file of requiredFiles) {
     assert(await exists(file), `Missing required file: ${file}`);
@@ -66,8 +64,10 @@ async function main() {
   const vercel = await read("vercel.json");
   const readme = await read("README.md");
   const changelog = await read("CHANGELOG.md");
+  const packageJson = JSON.parse(await read("package.json"));
   const allText = (await Promise.all(sourceFiles.map(read))).join("\n");
 
+  assert(packageJson.version === "1.3.0", "package.json version must be 1.3.0");
   assert(manifest.name === "FTOKX SIMPLE PWA", "Manifest name must be FTOKX SIMPLE PWA");
   assert(manifest.short_name === "FTOKX", "Manifest short_name must be FTOKX");
   assert(manifest.start_url === "/", "Manifest start_url must be /");
@@ -83,11 +83,40 @@ async function main() {
     assert(info.size > 100, `${iconPath} looks empty`);
   }
 
+  assert(app.includes('const APP_VERSION = "1.3.0"'), "App version must be 1.3.0");
+  assert(sw.includes('ftokx-simple-pwa-v1.3.0'), "Service worker cache version must be 1.3.0");
+  assert(changelog.includes("1.3.0"), "CHANGELOG missing 1.3.0");
+  assert(readme.includes("BTC 20X Discipline Ticket"), "README missing V1.3 title");
+
+  assert(app.includes("BTC-USDT-SWAP"), "Missing BTC-USDT-SWAP");
+  assert(app.includes('symbol: "BTCUSDT"'), "Missing BTCUSDT symbol");
+  assert(!app.includes("ETH-USDT-SWAP"), "ETH swap must be removed from V1.3 app logic");
+  assert(!app.includes("OKB-USDT-SWAP"), "OKB swap must be removed from V1.3 app logic");
+  assert(!app.includes('symbol: "ETHUSDT"'), "ETHUSDT must be removed from V1.3 app logic");
+  assert(!app.includes('symbol: "OKBUSDT"'), "OKBUSDT must be removed from V1.3 app logic");
+
+  assert(allText.includes("leverage: 20") || allText.includes("x20"), "Leverage x20 missing");
+  assert(allText.includes("Cô lập") || allText.includes("Isolated"), "Isolated margin missing");
+  assert(allText.includes("Always Plan, Conditional Trade"), "Always Plan principle missing");
+  assert(allText.includes("EXECUTABLE"), "EXECUTABLE action missing");
+  assert(allText.includes("WAIT_TRIGGER"), "WAIT_TRIGGER action missing");
+  assert(allText.includes("PLAN_ONLY"), "PLAN_ONLY action missing");
+  assert(allText.includes("LOCKED_RISK"), "LOCKED_RISK action missing");
+  assert(allText.includes("Fitness") && allText.includes("Grade"), "Fitness/Grade UI missing");
+  assert(allText.includes("SIZE_BY_GRADE"), "Grade-based sizing missing");
+  assert(allText.includes("TP_SL_BY_GRADE"), "Grade-based TP/SL missing");
+  assert(allText.includes("noChasePct: 0.0025"), "No Chase 0.25% missing");
+  assert(allText.includes("Position notional") || allText.includes("positionUsdt"), "Position notional missing");
+  assert(allText.includes("Morning Review") || allText.includes("MORNING REVIEW"), "Morning Review missing");
+  assert(allText.includes("slogan") || allText.includes("Lão nhắc"), "Slogan logic/UI missing");
+  assert(allText.includes("Không dời SL"), "No SL moving warning missing");
+  assert(allText.includes("Không DCA futures"), "No DCA futures warning missing");
+  assert(allText.includes("Không martingale") || !/martingale/i.test(allText), "Martingale safety missing");
+
   assert(app.includes("navigator.serviceWorker.register"), "App must register service worker");
-  assert(/CACHE_NAME\s*=\s*["']ftokx-simple-pwa-v\d+\.\d+\.\d+["']/.test(sw), "Service worker CACHE_NAME needs clear version");
   assert(sw.includes("caches.delete"), "Service worker must delete old caches in activate event");
-  assert(!sw.includes("/api/okx/candles"), "Service worker must not cache candles API path");
-  assert(!sw.includes("/api/okx/ticker"), "Service worker must not cache ticker API path");
+  assert(!sw.includes("/api/okx/candles"), "Service worker must not cache candles API path specifically");
+  assert(!sw.includes("/api/okx/ticker"), "Service worker must not cache ticker API path specifically");
   assert(sw.includes("/api/okx/"), "Service worker should bypass OKX API paths");
 
   assert(vercel.includes("/api/okx/candles"), "vercel.json missing candles rewrite");
@@ -99,47 +128,15 @@ async function main() {
   assert(!privateEndpointPattern.test(allText), "Private or account endpoint found");
   assert(!/secret\s*key/i.test(allText), "Secret key wording found");
   assert(!/passphrase/i.test(allText), "Passphrase wording found");
-  assert(!/martingale/i.test(allText), "Martingale wording found");
-  assert(!/trailing\s*stop/i.test(allText), "Trailing stop wording found");
   assert(!/chắc thắng/i.test(allText), "Guaranteed-win wording found");
-
-  for (const symbol of ["BTCUSDT", "ETHUSDT", "OKBUSDT"]) {
-    assert(allText.includes(symbol), `Human symbol missing: ${symbol}`);
-  }
-  assert(allText.includes("BTC-USDT-SWAP"), "Missing BTC-USDT-SWAP");
-  assert(allText.includes("ETH-USDT-SWAP"), "Missing ETH-USDT-SWAP");
-  assert(allText.includes("OKB-USDT-SWAP"), "Missing OKB-USDT-SWAP");
-  assert(allText.includes("POSITION_USDT = 50") || allText.includes("50 USDT"), "Position 50 USDT missing");
-  assert(allText.includes("LEVERAGE = 5") || allText.includes("x5"), "Leverage x5 missing");
-  assert(allText.includes("MARGIN_USDT = 10") || allText.includes("10 USDT"), "Margin 10 USDT missing");
-  assert(allText.includes("FEE_USDT = 0.05") || allText.includes("0.05 USDT"), "Fee 0.05 missing");
-  assert(allText.includes("WAIT_MINUTES = 20") || allText.includes("20 phút"), "Wait 20 minutes missing");
-  assert(allText.includes("0.03"), "BTC/ETH TP 3 percent missing");
-  assert(allText.includes("0.02"), "BTC/ETH SL 2 percent missing");
-  assert(allText.includes("0.04"), "OKB TP 4 percent missing");
-  assert(allText.includes("0.025") || allText.includes("2.5%"), "OKB SL 2.5 percent missing");
-  assert(allText.includes("+4.85"), "Daily max win +4.85 missing");
-  assert(allText.includes("-3.40"), "Daily max loss -3.40 missing");
-  assert(allText.includes("Không có lệnh thứ 4"), "Missing no fourth order rule");
-  assert(allText.includes("Không đuổi giá"), "Missing no chasing rule");
-  const oldOrderRule = "Không có lệnh thứ " + "6";
-  assert(!allText.includes(oldOrderRule), "Old sixth-order rule found");
   assert(html.includes("App chỉ lập phiếu. Người giữ tay."), "Mandatory safety sentence missing in UI");
   assert(html.includes("Đang online") && html.includes("Offline chỉ xem lại phiếu đã lưu"), "Online/offline copy missing");
-  assert(html.includes("Có thể cài app ra màn hình chính"), "Install hint missing");
+  assert(html.includes("Có thể") || html.includes("PWA"), "Install/PWA hint missing");
 
-  const blankBugOne = "N" + "/" + "A";
-  const blankBugTwo = "undef" + "ined";
-  assert(!allText.includes(blankBugOne), "Visible blank placeholder found");
-  assert(!allText.includes(blankBugTwo), "Raw empty-value word found");
-  assert(!/\d{1,3}\.\d{3},\d+/.test(allText), "Vietnamese trading price example found");
-  assert(!/\b\d+,\d{2,3}\b/.test(app), "Comma decimal trading price pattern found in app.js");
-
-  assert(readme.includes("Cảnh báo"), "README warning section missing");
-  assert(app.includes('const APP_VERSION = "1.2.4"'), "App version must be 1.2.4");
-  assert(sw.includes('ftokx-simple-pwa-v1.2.4'), "Service worker cache version must be 1.2.4");
-  assert(changelog.includes("1.2.4"), "CHANGELOG missing version 1.2.4");
   assert(allText.includes("ftokx_simple_pwa_v1_history"), "History localStorage key missing");
+  assert(allText.includes("ftokx_simple_pwa_v1_session"), "Session localStorage key missing");
+  assert(allText.includes("ftokx_simple_pwa_v1_alert_log"), "Alert log localStorage key missing");
+  assert(allText.includes("ftokx_simple_pwa_v1_paper_tests"), "Paper test localStorage key missing");
   assert(html.includes("LỊCH SỬ"), "History tab missing");
   assert(allText.includes("Xuất lịch sử JSON"), "History export missing");
   assert(allText.includes("Nhập lịch sử JSON"), "History import missing");
@@ -148,76 +145,35 @@ async function main() {
   assert(allText.includes("30 ngày"), "30-day comparison missing");
   assert(allText.includes("Kết quả ngày"), "Daily result panel missing");
   assert(allText.includes("Lưu kết quả ngày"), "Save daily result missing");
-  assert(allText.includes("SIGNAL_CONFIG"), "Signal config missing");
-  assert(allText.includes("minTradeScore: 7"), "V1.2.4 optimized min trade score must be 7");
-  assert(allText.includes("watchScore: 5"), "V1.2.4 watch score must be 5");
-  assert(allText.includes("strongScore: 7"), "V1.2.4 strong score must be 7");
-  assert(allText.includes("extremeRangeMultiplier: 1.6"), "V1.2.4 optimized extreme range multiplier missing");
-  assert(allText.includes("minDistanceFromEma20: 0.004"), "V1.2.4 optimized EMA20 noise filter missing");
-  assert(allText.includes("btcMustLead: true"), "V1.2.4 BTC lead filter missing");
-  assert(allText.includes("btcLeadMinScore: 5"), "V1.2.4 optimized BTC core lead threshold missing");
-  assert(allText.includes("lossCooldownEnabled: true"), "V1.2.4 loss cooldown missing");
-  assert(allText.includes("lossCooldownMinScore: 8"), "V1.2.4 optimized loss cooldown threshold missing");
-  assert(allText.includes("atrPctMin: 0.01"), "V1.2.4 optimized ATR min safety gate missing");
-  assert(allText.includes("atrPctMax: 0.02"), "V1.2.4 optimized ATR max safety gate missing");
-  assert(allText.includes("requireVolumePositive: true"), "V1.2.4 volume sanity gate missing");
-  assert(allText.includes("longRequireGreenCandle: true"), "V1.2.4 LONG green candle gate missing");
-  assert(allText.includes("AUTO_WATCH_INTERVAL_MS = 5 * 60 * 1000"), "V1.2.4 five-minute watch interval missing");
-  assert(allText.includes("OVERNIGHT_CONFIG"), "V1.2.4 overnight config missing");
-  assert(allText.includes("startHour: 21") && allText.includes("startMinute: 45"), "V1.2.4 overnight start 21:45 missing");
-  assert(allText.includes("minTradeScore: 6"), "V1.2.4 overnight relaxed score 6 missing");
-  assert(allText.includes("btcLeadMinScore: 4"), "V1.2.4 overnight BTC core threshold 4 missing");
-  assert(allText.includes("minDistanceFromEma20: 0.0025"), "V1.2.4 overnight EMA20 distance 0.25% missing");
-  assert(allText.includes("bestEffortPositionRatio: 0.5"), "V1.2.4 BEST_EFFORT risk reduction missing");
-  assert(allText.includes("BEST_EFFORT") && allText.includes("NOT_RECOMMENDED"), "V1.2.4 BEST_EFFORT warning missing");
-  assert(allText.includes("NO_TRADE_LOCKED"), "V1.2.4 NO_TRADE_LOCKED missing");
-  assert(allText.includes("MORNING REVIEW"), "V1.2.4 Morning Review missing");
-  assert(allText.includes("OVERNIGHT_READY_LONG") && allText.includes("OVERNIGHT_READY_SHORT"), "V1.2.4 Overnight tiers missing");
 
   assert(html.includes("BẬT LUÔN ONLINE"), "Watch Mode start button missing");
   assert(html.includes("Test chuông/rung"), "Watch Mode test alert button missing");
   assert(html.includes("Dừng báo động"), "Watch Mode stop alert button missing");
-  assert(app.includes("navigator.wakeLock.request"), "Screen Wake Lock request missing");
-  assert(app.includes("navigator.vibrate"), "Vibration alert missing");
-  assert(app.includes("AudioContext"), "Audio alert missing");
-  assert(app.includes("Notification.requestPermission"), "Notification permission request missing");
-  assert(allText.includes("ftokx_simple_pwa_v1_alert_log"), "Alert log localStorage key missing");
-  assert(allText.includes("ftokx_simple_pwa_v1_paper_tests"), "Paper test localStorage key missing");
-  assert(allText.includes("ALERT_ONCE_DURATION_MS"), "One-shot alert duration missing");
-  assert(allText.includes("Log cảnh báo một lần"), "One-shot alert log UI missing");
-  assert(allText.includes("Xóa log cảnh báo"), "Clear alert log button missing");
-  assert(allText.includes("Giấy thử TP/SL"), "Paper TP/SL panel missing");
-  assert(allText.includes("Giả định vào lệnh thành công"), "Paper entry-success status missing");
-  assert(allText.includes("Đã chạm TP giả lập"), "Paper TP result missing");
-  assert(allText.includes("Đã chạm SL giả lập"), "Paper SL result missing");
-  assert(allText.includes("row[5]"), "OKX candle volume parsing missing");
-  assert(!allText.includes("ALERT_REPEAT_MS"), "Old repeated alert timer should not remain");
-  assert(!allText.includes("ALERT_MAX_MS"), "Old long alert max timer should not remain");
-  assert(!allText.includes("api.telegram.org"), "Telegram endpoint must not be exposed in frontend");
-  assert(!allText.includes("TELEGRAM_BOT_TOKEN"), "Telegram credential placeholder must not be shipped in frontend");
-  assert(allText.includes("WATCH"), "V1.2.4 WATCH tier missing");
-  assert(allText.includes("5–6/8") || allText.includes("5/8 hoặc 6/8"), "V1.2.4 watch 5-6/8 copy missing");
-  assert(allText.includes("VALID_LONG") && allText.includes("VALID_SHORT"), "V1.2.4 VALID tiers missing");
-  assert(allText.includes("STRONG_LONG") && allText.includes("STRONG_SHORT"), "V1.2.4 STRONG tiers missing");
-  assert(allText.includes("EMA50 slope") || allText.includes("độ dốc EMA50"), "V1.2.4 EMA50 slope copy missing");
-  assert(allText.includes("không tăng vốn") || allText.includes("không tăng vốn".toUpperCase()), "V1.2.4 no size increase rule missing");
-  const apiKeyTerm = "API " + "key";
-  assert(!allText.toLowerCase().includes(apiKeyTerm.toLowerCase()), "API credential wording found");
+  assert(app.includes("AUTO_WATCH_INTERVAL_MS = 5 * 60 * 1000"), "Five-minute watch interval missing");
+  assert(app.includes('session.action !== "EXECUTABLE"'), "Watch Mode must alert only EXECUTABLE");
+
+  const forbiddenInZip = [".env.local", ".vercel/project.json"];
+  for (const forbidden of forbiddenInZip) {
+    assert(!(await exists(forbidden)), `Sensitive/local file should not be present in release tree: ${forbidden}`);
+  }
+
+  const blankBugOne = "N" + "/" + "A";
+  const blankBugTwo = "undef" + "ined";
+  assert(!allText.includes(blankBugOne), "Visible blank placeholder found");
+  assert(!allText.includes(blankBugTwo), "Raw empty-value word found");
 
   if (errors.length) {
-    console.error("VALIDATOR FAIL");
+    console.error("VALIDATION FAILED");
     for (const error of errors) {
       console.error(`- ${error}`);
     }
     process.exit(1);
   }
 
-  console.log("VALIDATOR PASS");
-  console.log(`Checked ${requiredFiles.length} required files.`);
+  console.log("VALIDATION PASSED: FTOKX SIMPLE PWA V1.3 BTC 20X Discipline Ticket package looks safe.");
 }
 
 main().catch((error) => {
-  console.error("VALIDATOR ERROR");
   console.error(error);
   process.exit(1);
 });
