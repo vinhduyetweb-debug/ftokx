@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "name": "FTOKX SIMPLE PWA V2.0 FINAL — Futures Discipline OS",
+  "symbol": "BTCUSDT",
+  "instId": "BTC-USDT-SWAP",
+  "marginMode": "isolated",
+  "leverage": 20,
+  "defaultFuturesFundUsdt": 100,
+  "defaultMarginPerTradeUsdt": 50,
+  "dailyMaxLossUsdt": 6,
+  "weeklyMaxLossUsdt": 15,
+  "oneTradePerDay": true,
+  "orderType": "limit",
+  "paperMode": false,
+  "btcSweepPercent": 50,
+  "tp1CloseRatio": 0.5,
+  "tpSlByGrade": {
+    "A": { "tp1Pct": 0.6, "tp2Pct": 1.2, "slPct": 0.6 },
+    "B": { "tp1Pct": 0.5, "tp2Pct": 1.0, "slPct": 0.5 },
+    "C": { "tp1Pct": 0.45, "tp2Pct": 0.8, "slPct": 0.45 },
+    "D": { "tp1Pct": 0.4, "tp2Pct": 0.6, "slPct": 0.4 },
+    "F": { "tp1Pct": 0.35, "tp2Pct": 0.5, "slPct": 0.35 }
+  },
+  "finalBlocks": [
+    "Command Center UI",
+    "Market Regime Pro",
+    "Session Quality",
+    "Pre-Trade Contract",
+    "Capital Ladder",
+    "Mistake Counter",
+    "Weekly Review & BTC Sweep",
+    "Paper Mode"
+  ],
+  "guards": [
+    "One Trade Per Day",
+    "Daily Max Loss",
+    "Weekly Max Loss",
+    "Futures Fund Guard",
+    "Copy Ticket to OKX"
+  ],
+  "safety": [
+    "no private API",
+    "no auto trade",
+    "no backend",
+    "no martingale",
+    "no DCA futures",
+    "do not move SL",
+    "do not re-enter after SL"
+  ]
+}

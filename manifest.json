@@ -1,7 +1,7 @@
 {
   "name": "FTOKX SIMPLE PWA",
   "short_name": "FTOKX",
-  "description": "BTC/USDT 20x Survival TP1/TP2 — mặc định 50 USDT margin, public OKX data, no private API, no auto trade.",
+  "description": "V2.0 FINAL Futures Discipline OS — BTC/USDT x20, Market Regime, Contract, Capital Guard, Weekly BTC Sweep; public OKX data only.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#05080d",

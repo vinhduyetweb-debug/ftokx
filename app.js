@@ -1,15 +1,19 @@
-const APP_VERSION = "1.3.5";
+const APP_VERSION = "2.0.0";
 const SESSION_KEY = "ftokx_simple_pwa_v1_session";
 const SETTINGS_KEY = "ftokx_simple_pwa_v1_settings";
 const HISTORY_KEY = "ftokx_simple_pwa_v1_history";
 const ALERT_LOG_KEY = "ftokx_simple_pwa_v1_alert_log";
 const PAPER_TESTS_KEY = "ftokx_simple_pwa_v1_paper_tests";
+const PRE_TRADE_CONTRACT_KEY = "ftokx_simple_pwa_v2_pretrade_contract";
 
 const CAPITAL_DEFAULTS = {
   futuresFundUsdt: 100,
   marginPerTradeUsdt: 50,
   dailyMaxLossUsdt: 6,
-  oneTradePerDay: true
+  oneTradePerDay: true,
+  paperMode: false,
+  btcSweepPercent: 50,
+  weeklyMaxLossUsdt: 15
 };
 const CACHE_BUSTER = () => `ts=${Date.now()}`;
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
@@ -40,6 +44,9 @@ const TRADING_CONFIG = {
   lossCooldownHours: 6,
   maxLossesPerDay: 1,
   maxTradesPerDay: 1,
+  sessionLateHour: 23,
+  sessionLateMinute: 30,
+  weeklyStopLossUsdt: -15,
   dailyStopLossUsdt: -6,
   dailyStopWinUsdt: 6,
   defaultMarginUsdt: 50,
@@ -91,6 +98,24 @@ const RESULT_OPTIONS = [
   { value: "STILL_OPEN", label: "Still Open", pnl: "" }
 ];
 
+const MISTAKE_OPTIONS = [
+  { value: "CHASE", label: "Đuổi giá / vào ngoài vùng" },
+  { value: "MARKET", label: "Dùng Market thay vì Limit" },
+  { value: "MOVE_SL", label: "Dời SL xa hơn" },
+  { value: "REENTER_AFTER_SL", label: "Vào lại sau SL" },
+  { value: "LOCKED_ENTRY", label: "Vào khi PLAN_ONLY / LOCKED_RISK" },
+  { value: "OVERSIZE", label: "Dùng margin cao hơn kỷ luật" },
+  { value: "DCA_FUTURES", label: "DCA / gồng futures" }
+];
+
+const CONTRACT_ITEMS = [
+  { id: "contractLimit", text: "Tôi dùng Limit, không Market." },
+  { id: "contractRisk", text: "Tôi chấp nhận mất tiền nếu SL." },
+  { id: "contractNoMoveSl", text: "Tôi không dời SL xa hơn." },
+  { id: "contractNoReentry", text: "Tôi không vào lại ngay nếu SL." },
+  { id: "contractNoDca", text: "Tôi không dùng tiền DCA BTC để gỡ futures." }
+];
+
 const SLOGANS = {
   EXECUTABLE: [
     "Lệnh đẹp vẫn phải nhỏ, vì thị trường không nợ ta điều gì.",
@@ -115,6 +140,14 @@ const SLOGANS = {
   DATA: [
     "Không có dữ liệu sạch thì không có quyết định sạch.",
     "Dữ liệu mù thì tay phải đứng yên."
+  ],
+  SESSION: [
+    "Khuya rồi thì thắng lớn nhất là không bấm bừa.",
+    "Thị trường còn đó, giấc ngủ mất rồi thì kỷ luật cũng mất."
+  ],
+  REVIEW: [
+    "Lời phải biết quét về BTC, lỗ phải biết dừng tay.",
+    "Tuần tốt là tuần còn luật, không phải tuần có nhiều lệnh."
   ]
 };
 
@@ -167,6 +200,9 @@ function saveSettingsOnce() {
     marginPerTradeUsdt: getPositiveNumber(existing.marginPerTradeUsdt, CAPITAL_DEFAULTS.marginPerTradeUsdt),
     dailyMaxLossUsdt: getPositiveNumber(existing.dailyMaxLossUsdt, CAPITAL_DEFAULTS.dailyMaxLossUsdt),
     oneTradePerDay: existing.oneTradePerDay !== false,
+    paperMode: existing.paperMode === true,
+    btcSweepPercent: clampNumber(existing.btcSweepPercent, 10, 80, CAPITAL_DEFAULTS.btcSweepPercent),
+    weeklyMaxLossUsdt: getPositiveNumber(existing.weeklyMaxLossUsdt, CAPITAL_DEFAULTS.weeklyMaxLossUsdt),
     version: APP_VERSION,
     strategy: "BTC_20X_DISCIPLINE_TICKET",
     createdAt: existing.createdAt || new Date().toISOString(),
@@ -208,6 +244,9 @@ function getCapitalSettings() {
     futuresFundUsdt: clampNumber(settings.futuresFundUsdt, 20, 10000, CAPITAL_DEFAULTS.futuresFundUsdt),
     marginPerTradeUsdt: clampNumber(settings.marginPerTradeUsdt, 5, 1000, CAPITAL_DEFAULTS.marginPerTradeUsdt),
     dailyMaxLossUsdt: clampNumber(settings.dailyMaxLossUsdt, 1, 500, CAPITAL_DEFAULTS.dailyMaxLossUsdt),
+    weeklyMaxLossUsdt: clampNumber(settings.weeklyMaxLossUsdt, 5, 1000, CAPITAL_DEFAULTS.weeklyMaxLossUsdt),
+    btcSweepPercent: clampNumber(settings.btcSweepPercent, 10, 80, CAPITAL_DEFAULTS.btcSweepPercent),
+    paperMode: settings.paperMode === true,
     oneTradePerDay: settings.oneTradePerDay !== false
   };
 }
@@ -219,6 +258,9 @@ function saveCapitalSettings(nextSettings) {
     futuresFundUsdt: clampNumber(nextSettings.futuresFundUsdt, 20, 10000, CAPITAL_DEFAULTS.futuresFundUsdt),
     marginPerTradeUsdt: clampNumber(nextSettings.marginPerTradeUsdt, 5, 1000, CAPITAL_DEFAULTS.marginPerTradeUsdt),
     dailyMaxLossUsdt: clampNumber(nextSettings.dailyMaxLossUsdt, 1, 500, CAPITAL_DEFAULTS.dailyMaxLossUsdt),
+    weeklyMaxLossUsdt: clampNumber(nextSettings.weeklyMaxLossUsdt, 5, 1000, CAPITAL_DEFAULTS.weeklyMaxLossUsdt),
+    btcSweepPercent: clampNumber(nextSettings.btcSweepPercent, 10, 80, CAPITAL_DEFAULTS.btcSweepPercent),
+    paperMode: nextSettings.paperMode === true,
     oneTradePerDay: nextSettings.oneTradePerDay !== false,
     updatedAt: new Date().toISOString()
   });
@@ -458,6 +500,9 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
   });
   const grade = getGrade(fitness);
   const capitalSettings = getCapitalSettings();
+  const marketRegimePro = getMarketRegimePro({ latest, previous, btc, distanceFromEma20, btcAtrPct, extreme, volumeRatio });
+  const sessionQuality = getSessionQuality(now, grade, getAction({ fitness, grade, hardVeto: "" }));
+  const capitalLadder = getCapitalLadder(grade, getAction({ fitness, grade, hardVeto: "" }), capitalSettings);
   const disciplineGuard = getDisciplineGuard(now, capitalSettings, grade);
   const hardVeto = getHardVetoReason({
     dataFreshness,
@@ -472,10 +517,11 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
     oppositeScore,
     grade,
     capitalSettings,
-    disciplineGuard
+    disciplineGuard,
+    sessionQuality
   });
   const action = getAction({ fitness, grade, hardVeto });
-  const marketRegime = getMarketRegime({ latest, previous, btc, distanceFromEma20, btcAtrPct, extreme });
+  const marketRegime = marketRegimePro.label;
   const slogan = getSlogan({ action, hardVeto });
   const actionLabel = getActionLabel(action);
 
@@ -492,6 +538,9 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
     grade,
     slogan,
     marketRegime,
+    marketRegimePro,
+    sessionQuality,
+    capitalLadder,
     longScore,
     shortScore,
     gap,
@@ -743,7 +792,10 @@ function getDisciplineGuard(now = new Date(), capitalSettings = getCapitalSettin
 }
 
 function getHardVetoReason(context) {
-  const { dataFreshness, extreme, btcAtrPct, btcVolumePositive, volumeRatio, gap, cooldown, sideScore, oppositeScore, disciplineGuard } = context;
+  const { dataFreshness, extreme, btcAtrPct, btcVolumePositive, volumeRatio, gap, cooldown, sideScore, oppositeScore, disciplineGuard, sessionQuality } = context;
+  if (sessionQuality && sessionQuality.hardLock) {
+    return `LOCKED_RISK: Session Quality ${sessionQuality.label}. ${sessionQuality.advice}`;
+  }
   if (disciplineGuard && disciplineGuard.active) {
     return `LOCKED_RISK: ${disciplineGuard.reason}`;
   }
@@ -793,6 +845,98 @@ function getActionLabel(action) {
     LOCKED_RISK: "Khóa rủi ro"
   };
   return labels[action] || action;
+}
+
+
+function getSessionQuality(now = new Date(), grade = "F", action = "PLAN_ONLY") {
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const lateStart = TRADING_CONFIG.sessionLateHour * 60 + TRADING_CONFIG.sessionLateMinute;
+  if (minutes >= lateStart || minutes < 360) {
+    return {
+      code: "LATE_NIGHT",
+      label: "Khuya / dễ mất tỉnh táo",
+      score: 35,
+      hardLock: !["A"].includes(grade),
+      advice: "Sau 23:30 chỉ nên PAPER hoặc Grade A thật đẹp. Buồn ngủ thì không trade."
+    };
+  }
+  if (minutes >= 1140 && minutes < lateStart) {
+    return {
+      code: "US_ACTIVE",
+      label: "Phiên tối / Mỹ hoạt động",
+      score: 75,
+      hardLock: false,
+      advice: "Biến động tốt hơn nhưng râu nến mạnh. Không Market, không chase."
+    };
+  }
+  if (minutes >= 780 && minutes < 1140) {
+    return {
+      code: "PRE_US",
+      label: "Chiều - chuẩn bị trước Mỹ",
+      score: 65,
+      hardLock: false,
+      advice: "Có thể lập kế hoạch, ưu tiên chờ trigger rõ."
+    };
+  }
+  return {
+    code: "ASIA_SLOW",
+    label: "Sáng / trưa Việt Nam",
+    score: 50,
+    hardLock: grade === "D" || grade === "F",
+    advice: "Phiên chậm dễ nhiễu. Grade yếu thì chỉ PLAN/PAPER."
+  };
+}
+
+function getMarketRegimePro(context) {
+  const { latest, previous, btc, distanceFromEma20, btcAtrPct, extreme, volumeRatio } = context;
+  const rising = latest.close > previous.close;
+  const aboveStack = latest.close > btc.ema20 && btc.ema20 > btc.ema50;
+  const belowStack = latest.close < btc.ema20 && btc.ema20 < btc.ema50;
+  if (extreme) {
+    return { code: "EXPANSION", label: "Expansion mạnh", playbook: "Không chase. Chờ retest hoặc bỏ.", score: 30 };
+  }
+  if (btcAtrPct < TRADING_CONFIG.atrPctMin) {
+    return { code: "CHOP_LOW_ATR", label: "Chop/Nhiễu ATR thấp", playbook: "Có bản đồ để nhìn, không ép lệnh thật.", score: 25 };
+  }
+  if (btcAtrPct > TRADING_CONFIG.atrPctMax) {
+    return { code: "VOLATILE", label: "Biến động quá mạnh", playbook: "Giảm size, chỉ Limit, tuyệt đối không đuổi giá.", score: 35 };
+  }
+  if (aboveStack && btc.ema50SlopeUp && volumeRatio >= 0.6) {
+    return { code: "TREND_UP", label: "Trend Up", playbook: "Ưu tiên Long khi hồi về vùng, không mua đuổi.", score: 82 };
+  }
+  if (belowStack && btc.ema50SlopeDown && volumeRatio >= 0.6) {
+    return { code: "TREND_DOWN", label: "Trend Down", playbook: "Ưu tiên Short khi hồi lên vùng, không bán đuổi.", score: 82 };
+  }
+  if (distanceFromEma20 < TRADING_CONFIG.weakDistanceFromEma20) {
+    return { code: "RANGE_EMA", label: "Range sát EMA20", playbook: "Dễ quét hai đầu. Chờ biên hoặc bỏ.", score: 45 };
+  }
+  return { code: rising ? "RANGE_LONG" : "RANGE_SHORT", label: rising ? "Range nghiêng Long" : "Range nghiêng Short", playbook: "Chỉ đánh khi giá về vùng đẹp, hết vùng thì bỏ.", score: 58 };
+}
+
+function getCapitalLadder(grade, action, capitalSettings = getCapitalSettings()) {
+  const base = Number(capitalSettings.marginPerTradeUsdt || CAPITAL_DEFAULTS.marginPerTradeUsdt);
+  const fund = Number(capitalSettings.futuresFundUsdt || CAPITAL_DEFAULTS.futuresFundUsdt);
+  let recommended = base;
+  let label = "Giữ 50 USDT nếu kỷ luật đủ";
+  if (action === "LOCKED_RISK" || action === "PLAN_ONLY") {
+    recommended = 0;
+    label = "Không dùng tiền thật — chỉ PAPER/quan sát";
+  } else if (grade === "C") {
+    recommended = Math.min(base, 25);
+    label = "Grade C: giảm về 25 USDT hoặc chờ trigger rất rõ";
+  } else if (grade === "D" || grade === "F") {
+    recommended = 0;
+    label = "Grade yếu: không mở vị thế thật";
+  } else if (fund < base * 2) {
+    recommended = Math.min(base, Math.max(10, Math.floor(fund * 0.35)));
+    label = "Quỹ mỏng: giảm margin, ưu tiên sống sót";
+  }
+  return {
+    recommendedMarginUsdt: Number(recommended.toFixed(2)),
+    currentMarginUsdt: base,
+    label,
+    usagePct: fund > 0 ? base / fund : 0
+  };
 }
 
 function getRiskProfile(action, grade) {
@@ -907,7 +1051,10 @@ function buildSession(analysis, ticker, now) {
       feeEstimate: riskTotals.fee,
       futuresFundUsdt: getCapitalSettings().futuresFundUsdt,
       dailyMaxLossUsdt: getCapitalSettings().dailyMaxLossUsdt,
-      oneTradePerDay: getCapitalSettings().oneTradePerDay
+      oneTradePerDay: getCapitalSettings().oneTradePerDay,
+      paperMode: getCapitalSettings().paperMode,
+      weeklyMaxLossUsdt: getCapitalSettings().weeklyMaxLossUsdt,
+      btcSweepPercent: getCapitalSettings().btcSweepPercent
     }
   };
 }
@@ -994,6 +1141,8 @@ function buildOrder(analysis, ticker, marginUsdt, positionUsdt) {
     accountRiskMax: formatPercentSigned(TRADING_CONFIG.referenceCapitalMaxUsdt > 0 ? netLoss / TRADING_CONFIG.referenceCapitalMaxUsdt : 0),
     rr: Number(rr.toFixed(2)),
     fullRr: Number(fullRr.toFixed(2)),
+    capitalLadder: analysis.capitalLadder || getCapitalLadder(analysis.grade, analysis.action),
+    recommendedMarginUsdt: formatUsdt((analysis.capitalLadder || getCapitalLadder(analysis.grade, analysis.action)).recommendedMarginUsdt),
     action: analysis.action,
     grade: analysis.grade,
     fitness: analysis.fitness,
@@ -1076,7 +1225,10 @@ function renderTicket(session) {
       </div>
 
       ${renderFocusTicket(session, order)}
+      ${renderCommandBadgesPanel(session, order)}
       ${renderCapitalGuardPanel(session, order)}
+      ${renderRegimeSessionPanel(session)}
+      ${renderPreTradeContractPanel(session)}
       ${renderSloganBox(session)}
       ${renderRiskWarning(session)}
 
@@ -1149,6 +1301,8 @@ function renderTicket(session) {
     </details>
 
     ${paperPanel ? `<details class="panel compact-details"><summary>Giấy thử TP1/TP2/SL</summary>${paperPanel}</details>` : ""}
+    ${renderMistakeCounterPanel()}
+    ${renderWeeklyReviewPanel()}
     ${renderScoreDetails(session)}
   `;
 
@@ -1175,7 +1329,10 @@ function renderCapitalGuardPanel(session, order) {
         <label><span>Quỹ futures</span><input id="futuresFundInput" type="number" min="20" step="1" value="${escapeHtml(settings.futuresFundUsdt)}" /></label>
         <label><span>Margin/lệnh</span><input id="marginPerTradeInput" type="number" min="5" step="1" value="${escapeHtml(settings.marginPerTradeUsdt)}" /></label>
         <label><span>Daily Max Loss</span><input id="dailyMaxLossInput" type="number" min="1" step="1" value="${escapeHtml(settings.dailyMaxLossUsdt)}" /></label>
+        <label><span>Weekly Max Loss</span><input id="weeklyMaxLossInput" type="number" min="5" step="1" value="${escapeHtml(settings.weeklyMaxLossUsdt)}" /></label>
+        <label><span>BTC Sweep % lời tuần</span><input id="btcSweepPercentInput" type="number" min="10" max="80" step="5" value="${escapeHtml(settings.btcSweepPercent)}" /></label>
         <label class="check-label"><input id="oneTradePerDayInput" type="checkbox" ${oneTradeChecked} /> One Trade Per Day</label>
+        <label class="check-label"><input id="paperModeInput" type="checkbox" ${settings.paperMode ? "checked" : ""} /> Paper Mode mặc định</label>
       </div>
       <button id="saveCapitalSettingsBtn" class="ghost-btn" type="button">Lưu phanh vốn</button>
       <p class="muted-text">Một lệnh x20 không được lớn hơn hệ thần kinh của ông. Quỹ 50–100 USDT thì thua một SL là nghỉ, không vào lại.</p>
@@ -1212,6 +1369,7 @@ function renderFocusTicket(session, order) {
           ${escapeHtml(order.direction)}
         </div>
         <div class="focus-metric"><span>Vốn ký quỹ</span><strong>${escapeHtml(order.marginUsdt)} USDT</strong></div>
+        <div class="focus-metric"><span>Lão khuyến nghị</span><strong>${escapeHtml(order.recommendedMarginUsdt)} USDT</strong></div>
         <div class="focus-metric"><span>Vị thế x20</span><strong>${escapeHtml(order.notionalUsdt)} USDT</strong></div>
         <div class="focus-metric"><span>Ước lượng BTC</span><strong>${escapeHtml(order.btcQty)} BTC</strong></div>
         <div class="focus-metric"><span>Entry zone</span><strong>${escapeHtml(order.entryZone)}</strong></div>
@@ -1386,6 +1544,7 @@ function renderDayResultPanel(session) {
           </select>
         </label>
       </div>
+      ${renderMistakeCheckboxes(record)}
       <label class="full-label">
         <span>Ghi chú bài học</span>
         <textarea id="dayNoteInput" rows="3" maxlength="360" placeholder="Ví dụ: đợi đúng trigger, bỏ qua vì PLAN_ONLY, hoặc phá luật dời SL.">${escapeHtml(note)}</textarea>
@@ -1410,7 +1569,7 @@ function renderScoreDetails(session) {
         <div class="metric"><span>Regime</span><strong>${escapeHtml(analysis.marketRegime)}</strong></div>
       </div>
       <ul class="tech-list">
-        <li>V1.3.5 chỉ dùng BTC/USDT Futures, Isolated, x20, Limit, Survival TP1/TP2, Kill Switch, Capital Guard, Copy Ticket, không auto trade, không private API.</li>
+        <li>V2.0 FINAL chỉ dùng BTC/USDT Futures, Isolated, x20, Limit, Survival TP1/TP2, Command Center, Market Regime Pro, Session Quality, Pre-Trade Contract, Capital Ladder, Mistake Counter, Weekly Review & BTC Sweep, Paper Mode; không auto trade, không private API.</li>
         <li>Always Plan: app luôn dựng 01 phiếu phân tích BTC. Action quyết định có nên xuống tiền hay chỉ xem.</li>
         <li>Fitness 100 điểm gồm: xu hướng 25, momentum 15, EMA distance 10, ATR 15, volume 10, không extreme 10, Long/Short gap 10, data fresh 5.</li>
         <li>Capital Guard: quỹ futures và margin/lệnh lưu local trên máy. x20 hiển thị notional, PnL, % lỗ so với quỹ. LOCKED_RISK vẫn tính lời/lỗ giả định nhưng không khuyến nghị nhập lệnh thật.</li>
@@ -1431,11 +1590,17 @@ function bindCapitalControls() {
     const futuresFundInput = document.querySelector("#futuresFundInput");
     const marginPerTradeInput = document.querySelector("#marginPerTradeInput");
     const dailyMaxLossInput = document.querySelector("#dailyMaxLossInput");
+    const weeklyMaxLossInput = document.querySelector("#weeklyMaxLossInput");
+    const btcSweepPercentInput = document.querySelector("#btcSweepPercentInput");
     const oneTradeInput = document.querySelector("#oneTradePerDayInput");
+    const paperModeInput = document.querySelector("#paperModeInput");
     const next = {
       futuresFundUsdt: futuresFundInput ? Number(futuresFundInput.value) : CAPITAL_DEFAULTS.futuresFundUsdt,
       marginPerTradeUsdt: marginPerTradeInput ? Number(marginPerTradeInput.value) : CAPITAL_DEFAULTS.marginPerTradeUsdt,
       dailyMaxLossUsdt: dailyMaxLossInput ? Number(dailyMaxLossInput.value) : CAPITAL_DEFAULTS.dailyMaxLossUsdt,
+      weeklyMaxLossUsdt: weeklyMaxLossInput ? Number(weeklyMaxLossInput.value) : CAPITAL_DEFAULTS.weeklyMaxLossUsdt,
+      btcSweepPercent: btcSweepPercentInput ? Number(btcSweepPercentInput.value) : CAPITAL_DEFAULTS.btcSweepPercent,
+      paperMode: paperModeInput ? paperModeInput.checked : false,
       oneTradePerDay: oneTradeInput ? oneTradeInput.checked : true
     };
     if (!Number.isFinite(next.futuresFundUsdt) || !Number.isFinite(next.marginPerTradeUsdt) || !Number.isFinite(next.dailyMaxLossUsdt)) {
@@ -1455,6 +1620,9 @@ function bindCapitalControls() {
         notionalUsdt: positionUsdt,
         futuresFundUsdt: getCapitalSettings().futuresFundUsdt,
         dailyMaxLossUsdt: getCapitalSettings().dailyMaxLossUsdt,
+        weeklyMaxLossUsdt: getCapitalSettings().weeklyMaxLossUsdt,
+        btcSweepPercent: getCapitalSettings().btcSweepPercent,
+        paperMode: getCapitalSettings().paperMode,
         oneTradePerDay: getCapitalSettings().oneTradePerDay
       };
       currentSession.updatedAt = new Date().toISOString();
@@ -1480,7 +1648,7 @@ function bindCopyTicketControls(session, order) {
 
 function buildCopyTicketText(session, order) {
   return [
-    "FTOKX BTC/USDT Futures · Isolated x20",
+    "FTOKX V2.0 FINAL · BTC/USDT Futures · Isolated x20",
     `Action: ${session.action} · Grade ${session.grade} · Fitness ${session.fitness}%`,
     `Hướng: ${order.direction}`,
     `Margin: ${order.marginUsdt} USDT`,
@@ -1492,7 +1660,11 @@ function buildCopyTicketText(session, order) {
     `SL: ${order.sl} (${order.slPct})`,
     `No chase sau: ${order.invalidPrice}`,
     `Kế hoạch PnL: TP1+BE ${order.netTp1Be} USDT | TP2 ${order.netTp2Plan} USDT | SL ${order.netLoss} USDT`,
-    "Luật: không Market, không dời SL, không DCA futures, không vào lại sau SL."
+    `Regime: ${session.analysis.marketRegimePro ? session.analysis.marketRegimePro.label : session.marketRegime}`,
+    `Session: ${session.analysis.sessionQuality ? session.analysis.sessionQuality.label : "Chưa phân loại"}`,
+    `Lão khuyến nghị margin: ${order.recommendedMarginUsdt} USDT`,
+    "Contract: Limit, không dời SL, không vào lại sau SL, không dùng tiền DCA BTC để gỡ futures.",
+    "Luật: không Market, không DCA futures, không martingale, không tăng size sau lỗ."
   ].join("\n");
 }
 
@@ -1520,6 +1692,135 @@ async function copyText(text) {
     console.warn("Fallback copy failed", error);
     return false;
   }
+}
+
+
+function getContractState() {
+  const state = {};
+  CONTRACT_ITEMS.forEach((item) => {
+    const input = document.querySelector(`#${item.id}`);
+    state[item.id] = Boolean(input && input.checked);
+  });
+  return state;
+}
+
+function isContractComplete() {
+  const state = getContractState();
+  return CONTRACT_ITEMS.every((item) => state[item.id]);
+}
+
+function canMarkLimitPlaced(session) {
+  if (!session) return false;
+  if (session.action === "LOCKED_RISK" || session.action === "PLAN_ONLY") {
+    showMessage("Chưa được đánh dấu đặt Limit", "PLAN_ONLY/LOCKED_RISK chỉ là bản đồ. Không biến cảnh báo thành lệnh thật.", "bad");
+    return false;
+  }
+  if (!isContractComplete()) {
+    showMessage("Thiếu Pre-Trade Contract", "Tick đủ 5 cam kết trước khi đánh dấu Đã đặt Limit.", "bad");
+    return false;
+  }
+  return true;
+}
+
+function renderMistakeCheckboxes(record) {
+  const selected = new Set(Array.isArray(record && record.mistakes) ? record.mistakes : []);
+  return `
+    <div class="mistake-box">
+      <strong>Đếm lỗi kỷ luật</strong>
+      <p class="muted-text">Lãi/lỗ chưa đủ. Trader già phải biết mình có phá luật không.</p>
+      <div class="mistake-grid">
+        ${MISTAKE_OPTIONS.map((item) => `
+          <label class="check-label"><input type="checkbox" class="mistake-input" value="${escapeHtml(item.value)}" ${selected.has(item.value) ? "checked" : ""} /> ${escapeHtml(item.label)}</label>
+        `).join("")}
+      </div>
+    </div>`;
+}
+
+function getCheckedMistakes() {
+  return Array.from(document.querySelectorAll(".mistake-input:checked")).map((input) => input.value);
+}
+
+function computeSweepPlanForPnl(netPnl) {
+  const pnl = Number(netPnl || 0);
+  if (pnl <= 0) return 0;
+  const percent = getCapitalSettings().btcSweepPercent / 100;
+  return Number((pnl * percent).toFixed(2));
+}
+
+function renderCommandBadgesPanel(session, order) {
+  const settings = getCapitalSettings();
+  return `
+    <section class="command-badges">
+      <div><span>Mode</span><strong>${settings.paperMode ? "PAPER FIRST" : "REAL MANUAL"}</strong></div>
+      <div><span>Regime</span><strong>${escapeHtml(session.analysis.marketRegimePro ? session.analysis.marketRegimePro.label : session.marketRegime)}</strong></div>
+      <div><span>Session</span><strong>${escapeHtml(session.analysis.sessionQuality ? session.analysis.sessionQuality.label : "Chưa phân loại")}</strong></div>
+      <div><span>Ladder</span><strong>${escapeHtml(order.recommendedMarginUsdt)} USDT</strong></div>
+    </section>`;
+}
+
+function renderRegimeSessionPanel(session) {
+  const regime = session.analysis.marketRegimePro || { label: session.marketRegime, playbook: "Chỉ vào khi kế hoạch rõ.", score: 0 };
+  const quality = session.analysis.sessionQuality || { label: "Chưa phân loại", advice: "Giữ kỷ luật.", score: 0 };
+  return `
+    <details class="panel compact-details pro-panel">
+      <summary>Market Regime Pro & Session Quality</summary>
+      <div class="summary-grid">
+        <div class="metric"><span>Regime</span><strong>${escapeHtml(regime.label)}</strong></div>
+        <div class="metric"><span>Regime Score</span><strong>${escapeHtml(regime.score)}</strong></div>
+        <div class="metric"><span>Session</span><strong>${escapeHtml(quality.label)}</strong></div>
+        <div class="metric"><span>Session Score</span><strong>${escapeHtml(quality.score)}</strong></div>
+      </div>
+      <p><strong>Playbook:</strong> ${escapeHtml(regime.playbook)}</p>
+      <p><strong>Giờ giao dịch:</strong> ${escapeHtml(quality.advice)}</p>
+    </details>`;
+}
+
+function renderPreTradeContractPanel(session) {
+  const disabledText = session.action === "LOCKED_RISK" || session.action === "PLAN_ONLY"
+    ? "PLAN_ONLY/LOCKED_RISK không nên đánh dấu lệnh thật. Contract vẫn để nhắc tay."
+    : "Tick đủ trước khi đánh dấu Đã đặt Limit.";
+  return `
+    <details class="panel compact-details contract-panel" open>
+      <summary>Pre-Trade Contract</summary>
+      <p class="muted-text">${escapeHtml(disabledText)}</p>
+      <div class="contract-grid">
+        ${CONTRACT_ITEMS.map((item) => `
+          <label class="check-label"><input id="${escapeHtml(item.id)}" type="checkbox" /> ${escapeHtml(item.text)}</label>
+        `).join("")}
+      </div>
+    </details>`;
+}
+
+function renderMistakeCounterPanel() {
+  const history = loadHistory();
+  const last30 = computeStats(history, 30);
+  return `
+    <details class="panel compact-details mistake-counter-panel">
+      <summary>Mistake Counter</summary>
+      <div class="summary-grid">
+        <div class="metric"><span>Lỗi 30 ngày</span><strong class="${last30.mistakes > 0 ? "loss" : "win"}">${last30.mistakes}</strong></div>
+        <div class="metric"><span>Quyền tăng vốn</span><strong>${last30.mistakes === 0 && last30.pnl >= 0 ? "Có thể giữ" : "Không tăng"}</strong></div>
+      </div>
+      <p class="muted-text">Nếu tuần có lỗi kỷ luật, không tăng margin. Nếu lỗi lặp lại, chuyển Paper Mode trước khi dùng tiền thật.</p>
+    </details>`;
+}
+
+function renderWeeklyReviewPanel() {
+  const settings = getCapitalSettings();
+  const stats = computeStats(loadHistory(), 7);
+  const status = stats.pnl <= -Math.abs(settings.weeklyMaxLossUsdt) ? "KHÓA TUẦN" : stats.mistakes > 0 ? "KHÔNG TĂNG VỐN" : "BÌNH THƯỜNG";
+  const sweep = stats.pnl > 0 ? Number((stats.pnl * settings.btcSweepPercent / 100).toFixed(2)) : 0;
+  return `
+    <details class="panel compact-details weekly-panel">
+      <summary>Weekly Review & BTC Sweep</summary>
+      <div class="summary-grid">
+        <div class="metric"><span>Trạng thái tuần</span><strong>${escapeHtml(status)}</strong></div>
+        <div class="metric"><span>PnL 7 ngày</span><strong class="${stats.pnl >= 0 ? "win" : "loss"}">${formatSigned(stats.pnl)} USDT</strong></div>
+        <div class="metric"><span>Lỗi kỷ luật</span><strong>${stats.mistakes}</strong></div>
+        <div class="metric"><span>Quét sang BTC</span><strong class="win">${formatUsdt(sweep)} USDT</strong></div>
+      </div>
+      <p class="muted-text">Nếu futures có lời, quét ${escapeHtml(settings.btcSweepPercent)}% lợi nhuận sang BTC. Nếu tuần lỗ hoặc phá luật, không nạp thêm futures.</p>
+    </details>`;
 }
 
 function bindStatusButtons() {
@@ -1556,6 +1857,9 @@ function updateOrderStatus(index, status) {
 
   const now = new Date();
   const order = currentSession.orders[index];
+  if (status === "Đã đặt Limit" && !canMarkLimitPlaced(currentSession)) {
+    return;
+  }
   order.status = status;
 
   if (status === "Đã đặt Limit") {
@@ -1598,6 +1902,9 @@ function saveDayResult() {
   record.netPnl = Number(netPnl.toFixed(2));
   record.note = noteInput ? noteInput.value.trim() : "";
   record.emotion = emotionSelect ? emotionSelect.value : "";
+  record.mistakes = getCheckedMistakes();
+  record.paperMode = getCapitalSettings().paperMode;
+  record.btcSweepPlannedUsdt = computeSweepPlanForPnl(record.netPnl);
   record.finalStatus = resolveFinalStatus(record.decision, result);
   record.updatedAt = now;
 
@@ -2229,6 +2536,9 @@ function buildHistoryRecord(session, existing) {
     netPnl: Number.isFinite(Number(previous.netPnl)) ? Number(previous.netPnl) : 0,
     note: previous.note || "",
     emotion: previous.emotion || "",
+    mistakes: Array.isArray(previous.mistakes) ? previous.mistakes : [],
+    paperMode: previous.paperMode === true,
+    btcSweepPlannedUsdt: Number.isFinite(Number(previous.btcSweepPlannedUsdt)) ? Number(previous.btcSweepPlannedUsdt) : 0,
     createdAt: previous.createdAt || session.createdAt,
     updatedAt: session.updatedAt || new Date().toISOString()
   };
@@ -2277,6 +2587,8 @@ function renderStatsPanel(title, stats) {
         <div class="metric"><span>LONG / SHORT</span><strong>${stats.longDays} / ${stats.shortDays}</strong></div>
         <div class="metric"><span>Fitness TB</span><strong>${stats.avgFitness}%</strong></div>
         <div class="metric"><span>Tổng Net PnL</span><strong class="${stats.pnl >= 0 ? "win" : "loss"}">${formatSigned(stats.pnl)} USDT</strong></div>
+        <div class="metric"><span>Lỗi kỷ luật</span><strong class="${stats.mistakes > 0 ? "loss" : "win"}">${stats.mistakes}</strong></div>
+        <div class="metric"><span>BTC Sweep gợi ý</span><strong class="win">${formatUsdt(stats.sweep)} USDT</strong></div>
         <div class="metric"><span>Kỷ luật ghi kết quả</span><strong>${stats.doneDays}/${stats.total}</strong></div>
       </div>
     </section>
@@ -2292,6 +2604,7 @@ function renderHistoryItem(item) {
         <strong>${escapeHtml(formatDateShort(item.date))}</strong>
         <p class="muted-text">${escapeHtml(item.time || "Đã lưu")} · ${escapeHtml(item.decision)} · ${escapeHtml(item.action || item.signalTier || "PLAN_ONLY")} · ${escapeHtml(item.fitness || 0)}% · Grade ${escapeHtml(item.grade || "")}</p>
         ${item.note ? `<p>${escapeHtml(item.note)}</p>` : ""}
+        ${Array.isArray(item.mistakes) && item.mistakes.length ? `<p class="loss">Lỗi kỷ luật: ${escapeHtml(item.mistakes.length)}</p>` : ""}
       </div>
       <div class="history-result">
         <span class="pill muted">${escapeHtml(resultLabel)}</span>
@@ -2321,6 +2634,8 @@ function computeStats(history, days) {
     lockDays: records.filter((item) => item.action === "LOCKED_RISK").length,
     avgFitness,
     pnl: Number(records.reduce((sum, item) => sum + Number(item.netPnl || 0), 0).toFixed(2)),
+    mistakes: records.reduce((sum, item) => sum + (Array.isArray(item.mistakes) ? item.mistakes.length : 0), 0),
+    sweep: Number(records.reduce((sum, item) => sum + Number(item.btcSweepPlannedUsdt || 0), 0).toFixed(2)),
     doneDays
   };
 }

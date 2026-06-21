@@ -1,98 +1,43 @@
-# Changelog
+# CHANGELOG
 
-## 1.3.5 — 2026-06-21
+## V2.0.0 FINAL — Futures Discipline OS
 
-- Thêm **Kill Switch & Capital Guard**.
-- Thêm thiết lập local: quỹ futures, margin/lệnh, Daily Max Loss và One Trade Per Day.
-- Hard veto mới: khóa khi margin lớn hơn quỹ futures, hôm nay đã dùng một lệnh, chạm Daily Max Loss, hoặc Grade yếu trong khi margin chiếm quá lớn quỹ.
-- Thêm nút **Copy phiếu OKX** trong khu VỊ THẾ ĐỀ XUẤT.
-- Phiếu copy gồm BTC/USDT Isolated x20, hướng, margin, vị thế danh nghĩa, Limit, Entry Zone, TP1, TP2, SL, No Chase và PnL kế hoạch.
-- Rủi ro ước tính hiển thị % margin dùng trên quỹ futures và % lỗ SL so với quỹ futures.
-- Cập nhật README, config, validator và service worker cache lên `ftokx-simple-pwa-v1.3.5`.
+Ngày: 2026-06-21
 
-## 1.3.2 — 2026-06-21
+### Thêm mới
 
-- Đổi cách hiểu vị thế theo thực tế sử dụng: mặc định **vốn ký quỹ 50 USDT/lệnh**.
-- Với x20, app hiển thị ngay **vị thế danh nghĩa khoảng 1.000 USDT** và ước lượng BTC theo giá Limit.
-- Khối **VỊ THẾ ĐỀ XUẤT** hiển thị thêm vốn ký quỹ, vị thế x20, ước lượng BTC, lãi nếu TP, lỗ nếu SL và ROI trên phần ký quỹ.
-- Bảng phiếu đầy đủ thêm cột Ký quỹ, Vị thế x20, TP PnL, SL PnL.
-- Rủi ro ước tính hiển thị rủi ro so với kế hoạch vốn 50–100 USDT.
-- `LOCKED_RISK` vẫn tính lời/lỗ giả định để nhìn thị trường nhưng cảnh báo không nhập lệnh thật.
-- Cập nhật README, config, validator và service worker cache lên `ftokx-simple-pwa-v1.3.2`.
+- Command Center UI: gom hướng, Fitness, Grade, Limit, TP1, TP2, SL, PnL, Copy OKX lên vùng trọng tâm.
+- Market Regime Pro: phân loại Trend Up, Trend Down, Range, Chop, Expansion.
+- Session Quality: đánh giá chất lượng giờ giao dịch; sau 23:30 siết mạnh nếu không phải Grade A.
+- Pre-Trade Contract: yêu cầu tick đủ 5 cam kết trước khi đánh dấu `Đã đặt Limit`.
+- Capital Ladder: hiển thị margin hiện tại và margin Lão khuyến nghị theo Grade/action/quỹ futures.
+- Mistake Counter: ghi lỗi kỷ luật trong Morning Review và tổng hợp 7/30 ngày.
+- Weekly Review & BTC Sweep: gợi ý quét lợi nhuận futures sang BTC theo tỷ lệ cài đặt.
+- Paper Mode setting: cho phép ghi nhớ ưu tiên quan sát/giấy thử trước.
+- Weekly Max Loss setting: thêm phanh lỗ tuần.
 
-## 1.3.1 — 2026-06-21
+### Giữ nguyên
 
-- Compact Focus UI: giao diện mặc định gọn hơn, ưu tiên nhìn ngay vị thế đề xuất.
-- Thêm khối **VỊ THẾ ĐỀ XUẤT** ở đầu phiếu: LONG/SHORT, size, margin ước tính, Limit, Entry Zone, TP, SL, No Chase và R:R.
-- Gom phần giải thích, bảng chi tiết, rủi ro, theo dõi thủ công, Morning Review và kỹ thuật 4H vào các mục mở rộng `details`.
-- Rút gọn action area: nút cập nhật là trọng tâm; Watch Mode và ghi chú an toàn mặc định thu gọn.
-- Giữ nguyên logic an toàn V1.3.0: BTC/USDT only, Isolated x20, no backend, no private API, no auto trade.
-- Tăng service worker cache lên `ftokx-simple-pwa-v1.3.1`.
+- Chỉ BTC/USDT.
+- Isolated x20.
+- Limit only.
+- Survival TP1/TP2.
+- Kill Switch & Capital Guard.
+- Không backend.
+- Không private API.
+- Không auto trade.
+- Không martingale.
+- Không DCA futures.
+- Không phá localStorage key cũ.
 
-## 1.3.0 — 2026-06-21
+### Test
 
-- Chuyển sản phẩm sang **BTC 20X Discipline Ticket**.
-- Chỉ dùng một cặp duy nhất: `BTCUSDT` / `BTC-USDT-SWAP`.
-- Đòn bẩy mặc định x20, margin mode: Cô lập, loại lệnh: Limit.
-- Thêm triết lý **Always Plan, Conditional Trade**: app luôn dựng 01 phiếu BTC để nhìn, nhưng Action quyết định có nên xuống tiền hay không.
-- Thêm **Fitness Score 0–100%** so với bộ phiếu chuẩn.
-- Thêm **Grade A/B/C/D/F** và tự co position: 50 / 35 / 25 / 15 / 0 USDT.
-- Thêm Action: `EXECUTABLE`, `WAIT_TRIGGER`, `PLAN_ONLY`, `LOCKED_RISK`.
-- Thêm No Chase rule: phiếu hết hiệu lực nếu giá chạy quá 0.25% khỏi Limit.
-- Thêm TP/SL động theo Grade, phù hợp với 20x.
-- Thêm Market Regime: Trend Up, Trend Down, Range, Chop/Nhiễu, Expansion mạnh.
-- Thêm slogan/câu nhắc của Lão theo từng trạng thái.
-- Watch Mode chỉ hú khi action = `EXECUTABLE`; không hú cho `PLAN_ONLY`, `WAIT_TRIGGER`, `LOCKED_RISK`.
-- Morning Review nâng cấp: ghi cảm xúc, dời SL, gồng lỗ, vào lại sau SL.
-- Giữ PWA tĩnh, no private API, no auto trade, no backend.
-- Giữ localStorage key cũ để tránh phá dữ liệu cũ.
-- Loại bỏ `.env.local` và `.vercel` khỏi ZIP phát hành.
-- Tăng service worker cache lên `ftokx-simple-pwa-v1.3.0`.
+- `npm run check`
+- `npm run validate`
 
-## 1.2.4 — 2026-06-20
+## V1.3.5 — Kill Switch & Capital Guard
 
-- Thêm Overnight Relaxed Mode từ 21:45 đến 23:59 theo giờ thiết bị.
-- Thêm cấp `OVERNIGHT_READY_LONG` / `OVERNIGHT_READY_SHORT` với ngưỡng nới lỏng: score >= 6/8, gap >= 2, BTC core >= 4/5, EMA20 distance >= 0.25%.
-- Thêm `BEST_EFFORT_LONG` / `BEST_EFFORT_SHORT` sau 21:45: nếu không đủ tín hiệu chuẩn, app vẫn dựng 01 phiếu tham khảo tối ưu nhất, gắn nhãn NOT_RECOMMENDED.
-- BEST_EFFORT giảm vốn còn 25 USDT/lệnh, bắt buộc TP/SL, không bắt buộc vào lệnh.
-- Thêm `NO_TRADE_LOCKED` cho hard veto: ATR ngoài vùng, volume lỗi, extreme candle hoặc cooldown sau ngày lỗ chưa đạt 8/8.
-- Thêm Morning Review copy để sáng hôm sau ghi kết quả TP/SL/Không khớp/Tự đóng.
-- Giữ no auto trade, no private API, no lệnh thứ 4.
-- Tăng service worker cache lên `ftokx-simple-pwa-v1.2.4`.
-
-## 1.2.3 — 2026-06-18
-
-- Safe Optimized Signal Config theo kết quả backtest export ngày 18/06/2026.
-- Nâng ngưỡng lập phiếu từ 6/8 lên 7/8.
-- 5/8 và 6/8 là WATCH, không lập phiếu.
-- Siết BTC dẫn hướng từ 4/5 lên 5/5 tiêu chí lõi.
-- Siết vùng nhiễu sát EMA20 từ 0.25% lên 0.4%.
-- Siết extreme candle multiplier từ 1.8 xuống 1.6.
-- Siết cooldown sau ngày lỗ: phải đạt 8/8 mới lập phiếu.
-- Siết V3.3 Safety Gate: ATR% từ 0.755%–3.0% thành 1.0%–2.0%, volume BTC > 0, LONG cần BTC 4H đóng xanh.
-- Giữ Alert Discipline + Paper Result Pack từ V1.2.2: Watch Mode 5 phút, báo động một lần, log cảnh báo, giấy thử TP/SL giả lập.
-- Không tăng vốn, không tăng đòn bẩy, không thêm lệnh thứ 4, không auto trade.
-- Tăng service worker cache lên `ftokx-simple-pwa-v1.2.3`.
-- Cập nhật README và validator cho V1.2.3.
-
-## 1.1.0 — 2026-06-18
-
-- Thêm tab LỊCH SỬ.
-- Thêm LocalStorage key `ftokx_simple_pwa_v1_history`.
-- Lưu lịch sử từng ngày theo quyết định LONG / SHORT / KHÔNG GIAO DỊCH.
-- Thêm khu vực Kết quả ngày với Net PnL USDT và ghi chú.
-- Thêm thống kê so sánh 7 ngày và 30 ngày.
-- Thêm xuất lịch sử JSON, nhập lịch sử JSON và xóa lịch sử.
-- Tăng service worker cache lên `ftokx-simple-pwa-v1.1.0`.
-- Cập nhật validator cho lịch sử và backup.
-
-## 1.0.0 — 2026-06-18
-
-- Tạo mới FTOKX SIMPLE PWA — X5 OKX TICKET.
-- HTML/CSS/JavaScript thuần.
-- PWA cơ bản với manifest và service worker version `ftokx-simple-pwa-v1.0.0`.
-- Vercel rewrite cho OKX public candles/ticker.
-- Chấm bối cảnh 4H bằng EMA20/EMA50.
-- Lập phiếu thủ công cho BTCUSDT, ETHUSDT, OKBUSDT.
-- Theo dõi trạng thái thủ công bằng LocalStorage.
-- Validator dự án trong `tools/validate-app.js`.
+- One Trade Per Day.
+- Daily Max Loss.
+- Futures Fund Guard.
+- Copy Ticket OKX.

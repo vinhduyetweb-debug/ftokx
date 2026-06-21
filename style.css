@@ -1174,3 +1174,79 @@ small {
     grid-template-columns: 1fr;
   }
 }
+
+/* V2.0 FINAL — Futures Discipline OS */
+.command-badges {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.command-badges div,
+.contract-panel,
+.mistake-box {
+  border: 1px solid rgba(46, 203, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.command-badges div {
+  padding: 12px;
+}
+
+.command-badges span,
+.pnl-tile span,
+.price-tile span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.command-badges strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.contract-grid,
+.mistake-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.contract-grid .check-label,
+.mistake-grid .check-label {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mistake-box {
+  padding: 12px;
+  margin: 12px 0;
+}
+
+.mistake-box strong {
+  color: var(--gold);
+}
+
+.pro-panel p,
+.weekly-panel p,
+.mistake-counter-panel p {
+  line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  .command-badges,
+  .contract-grid,
+  .mistake-grid {
+    grid-template-columns: 1fr;
+  }
+}

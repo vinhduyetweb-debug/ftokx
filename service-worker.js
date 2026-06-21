@@ -1,4 +1,4 @@
-const CACHE_NAME = "ftokx-simple-pwa-v1.3.5";
+const CACHE_NAME = "ftokx-simple-pwa-v2.0.0-final";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -19,7 +19,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
-      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      keys.filter((key) => key.startsWith("ftokx-simple-pwa-") && key !== CACHE_NAME).map((key) => caches.delete(key))
     ))
   );
   self.clients.claim();
@@ -37,7 +37,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+    caches.match(event.request).then((cached) => cached || fetch(event.request, { cache: "no-store" }).then((response) => {
       const copy = response.clone();
       caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
       return response;
