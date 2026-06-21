@@ -1,7 +1,7 @@
 {
   "name": "FTOKX SIMPLE PWA",
   "short_name": "FTOKX",
-  "description": "BTC/USDT 20x Discipline Ticket — PWA tĩnh, public OKX data, no private API, no auto trade.",
+  "description": "BTC/USDT 20x Discipline Ticket — mặc định 50 USDT margin, public OKX data, no private API, no auto trade.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#05080d",

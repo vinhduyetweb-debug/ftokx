@@ -1,18 +1,20 @@
-# FTOKX SIMPLE PWA V1.3.1 — BTC 20X Discipline Ticket
+# FTOKX SIMPLE PWA V1.3.2 — BTC 20X Discipline Ticket
 
 App PWA tĩnh HTML/CSS/JS dùng dữ liệu thị trường công khai OKX để lập phiếu futures thủ công cho **BTC/USDT**.
 
-Triết lý V1.3.1:
+Triết lý V1.3.2:
 
 > Always Plan, Conditional Trade — mở app lúc nào cũng có kế hoạch, nhưng không phải kế hoạch nào cũng đáng xuống tiền.
 
+## Điểm mới V1.3.2
 
-## Điểm mới V1.3.1
-
-- Giao diện mặc định gọn hơn, không dàn quá nhiều nội dung ra màn hình chính.
-- Khối đầu tiên luôn hiện **VỊ THẾ ĐỀ XUẤT**: hướng LONG/SHORT, vị thế, ký quỹ ước tính, Limit, Entry Zone, TP, SL, No Chase và R:R.
-- Các phần cần đọc sâu như lý do, bảng phiếu đầy đủ, rủi ro, theo dõi thủ công, Morning Review và kỹ thuật 4H được thu gọn bằng mục mở rộng.
-- Watch Mode và ghi chú an toàn cũng được thu gọn để app tập trung vào phiếu chính.
+- Mặc định vốn ký quỹ mỗi phiếu: **50 USDT**.
+- Với x20, app hiển thị ngay **vị thế danh nghĩa khoảng 1.000 USDT**.
+- Khối đầu tiên luôn hiện **VỊ THẾ ĐỀ XUẤT**: LONG/SHORT, vốn ký quỹ, vị thế x20, ước lượng BTC, Limit, Entry Zone, TP, SL, No Chase, R:R.
+- Hiển thị luôn **lãi nếu TP** và **lỗ nếu SL**, gồm cả ROI trên phần ký quỹ 50 USDT.
+- Hiển thị rủi ro tương đối so với vốn kế hoạch **50–100 USDT**.
+- `LOCKED_RISK` vẫn tính sẵn lời/lỗ giả định để nhìn thị trường, nhưng không khuyến nghị nhập lệnh thật.
+- Giữ giao diện compact: phần cần đọc sâu vẫn thu gọn bằng mục mở rộng.
 
 ## Cảnh báo
 
@@ -36,14 +38,14 @@ Triết lý V1.3.1:
 - Gắn **Action** rõ ràng:
   - `EXECUTABLE`: có thể xem xét thủ công.
   - `WAIT_TRIGGER`: chỉ chờ giá về vùng, không chase.
-  - `PLAN_ONLY`: chỉ lập kế hoạch, không khuyến nghị vào lệnh.
-  - `LOCKED_RISK`: khóa rủi ro, position mặc định 0 USDT.
+  - `PLAN_ONLY`: có phiếu để nhìn, ưu tiên không xuống tiền.
+  - `LOCKED_RISK`: khóa rủi ro, có lời/lỗ giả định nhưng không vào thật.
 - Có slogan/câu nhắc của Lão phù hợp từng trạng thái.
 - Có Morning Review để tự ghi kết quả và bài học.
 - Có Watch Mode quét 5 phút/lần khi app đang mở; chỉ hú chuông khi action = `EXECUTABLE`.
 - Có lịch sử 7 ngày / 30 ngày, export/import JSON.
 
-## Thông số giao dịch V1.3
+## Thông số giao dịch V1.3.2
 
 | Mục | Giá trị |
 | --- | --- |
@@ -52,23 +54,32 @@ Triết lý V1.3.1:
 | Margin | Isolated / Cô lập |
 | Leverage | x20 |
 | Loại lệnh | Limit |
+| Vốn ký quỹ/lệnh | 50 USDT |
+| Vị thế danh nghĩa | 1.000 USDT |
+| Vốn kế hoạch | 50–100 USDT |
 | Số phiếu mỗi lần mở app | 01 phiếu |
 | No Chase | 0.25% khỏi Limit |
 | Chờ Limit | 20 phút |
 | Private API | Không |
 | Auto trade | Không |
 
-## Size tự co theo Grade
+## Cách app tính lời/lỗ
 
-| Grade | Fitness | Position notional mặc định | Ý nghĩa |
-| --- | ---: | ---: | --- |
-| A | 90–100% | 50 USDT | Phiếu rất đẹp, vẫn vào nhỏ |
-| B | 80–89% | 35 USDT | Phiếu tốt, giảm size |
-| C | 70–79% | 25 USDT | Chờ trigger, không chase |
-| D | 55–69% | 15 USDT | Phiếu yếu, ưu tiên chỉ xem |
-| F | <55% | 0 USDT | Không đáng xuống tiền |
+Với vốn ký quỹ mặc định **50 USDT** và đòn bẩy **x20**:
 
-`LOCKED_RISK` luôn đặt position mặc định **0 USDT** dù Grade/Fitness ra sao.
+- Vị thế danh nghĩa = `50 x 20 = 1.000 USDT`.
+- Lãi gộp nếu TP = `notional x TP%`.
+- Lỗ gộp nếu SL = `notional x SL%`.
+- Phí ước tính = `notional x feeRate x 2`.
+- Lãi/lỗ ròng = lãi/lỗ gộp trừ phí.
+
+Ví dụ với TP 0.50% và SL 0.30%:
+
+- Gross TP khoảng `+5.00 USDT`.
+- Gross SL khoảng `-3.00 USDT`.
+- Phí ước tính khoảng `1.00 USDT`.
+- Net TP khoảng `+4.00 USDT`.
+- Net SL khoảng `-4.00 USDT`.
 
 ## TP/SL mặc định theo Grade
 
@@ -82,22 +93,9 @@ Triết lý V1.3.1:
 
 Với 20x, SL nhỏ là bắt buộc. Không dời SL. Không gồng lỗ.
 
-## Fitness Score 100 điểm
-
-| Nhóm | Điểm |
-| --- | ---: |
-| Xu hướng BTC / EMA / cấu trúc giá | 25 |
-| Momentum nến 4H | 15 |
-| Khoảng cách BTC tới EMA20 | 10 |
-| ATR trong vùng đẹp | 15 |
-| Volume xác nhận | 10 |
-| Không có extreme candle | 10 |
-| Long/Short gap rõ ràng | 10 |
-| Dữ liệu OKX fresh | 5 |
-
 ## Hard veto / LOCKED_RISK
 
-App vẫn dựng phiếu phân tích, nhưng khóa hành động và để position = 0 USDT nếu có:
+App vẫn dựng phiếu phân tích và tính lời/lỗ giả định, nhưng khóa hành động nếu có:
 
 - Dữ liệu không fresh.
 - ATR% dưới 1.0% hoặc trên 2.0%.
@@ -115,52 +113,26 @@ App vẫn dựng phiếu phân tích, nhưng khóa hành động và để posit
 - Cooldown: “Sau một lệnh thua, việc đầu tiên là giữ tay.”
 - Lỗi dữ liệu: “Không có dữ liệu sạch thì không có quyết định sạch.”
 
-## Morning Review
-
-Sáng hôm sau ghi:
-
-- Phiếu tối qua.
-- LONG/SHORT.
-- Entry, TP, SL.
-- Kết quả: TP / SL / Manual Close / Not Filled / Still Open.
-- PnL nhập tay.
-- Cảm xúc lúc vào lệnh.
-- Ghi chú bài học.
-- Có dời SL không, có gồng lỗ không, có vào lại sau SL không.
-
-Nếu lỗ hoặc phá luật, phiên sau phải để cooldown kéo tay lại.
-
-## LocalStorage
-
-Giữ các key cũ để không phá dữ liệu người dùng:
-
-- `ftokx_simple_pwa_v1_session`
-- `ftokx_simple_pwa_v1_settings`
-- `ftokx_simple_pwa_v1_history`
-- `ftokx_simple_pwa_v1_alert_log`
-- `ftokx_simple_pwa_v1_paper_tests`
-
-## Chạy local
+## Lệnh kiểm tra
 
 ```bash
 npm run check
 npm run validate
-npx serve .
 ```
 
-Lưu ý: rewrite `/api/okx/*` hoạt động khi chạy qua Vercel. Nếu chạy local bằng static server đơn giản, dữ liệu OKX có thể không cập nhật nếu không có proxy tương ứng.
+## Deploy
 
-## Deploy Vercel
-
-Nếu repo đã nối Vercel:
+Nếu Vercel đã nối GitHub:
 
 ```bash
+npm run check
+npm run validate
 git status
 git add .
-git commit -m "Add V1.3 BTC 20X Discipline Ticket"
+git commit -m "Add V1.3.2 default 50 USDT margin PnL"
 git push origin main
 ```
 
-Push xong Vercel tự deploy.
+## Nguyên tắc sống còn
 
-Slogan: Có kế hoạch mỗi ngày, nhưng không cần xuống tiền mỗi ngày.
+App chỉ đưa bản đồ. Người giữ tay. Futures x20 không tha lỗi dời SL.

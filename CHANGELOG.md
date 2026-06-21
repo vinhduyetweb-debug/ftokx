@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.2 — 2026-06-21
+
+- Đổi cách hiểu vị thế theo thực tế sử dụng: mặc định **vốn ký quỹ 50 USDT/lệnh**.
+- Với x20, app hiển thị ngay **vị thế danh nghĩa khoảng 1.000 USDT** và ước lượng BTC theo giá Limit.
+- Khối **VỊ THẾ ĐỀ XUẤT** hiển thị thêm vốn ký quỹ, vị thế x20, ước lượng BTC, lãi nếu TP, lỗ nếu SL và ROI trên phần ký quỹ.
+- Bảng phiếu đầy đủ thêm cột Ký quỹ, Vị thế x20, TP PnL, SL PnL.
+- Rủi ro ước tính hiển thị rủi ro so với kế hoạch vốn 50–100 USDT.
+- `LOCKED_RISK` vẫn tính lời/lỗ giả định để nhìn thị trường nhưng cảnh báo không nhập lệnh thật.
+- Cập nhật README, config, validator và service worker cache lên `ftokx-simple-pwa-v1.3.2`.
+
 ## 1.3.1 — 2026-06-21
 
 - Compact Focus UI: giao diện mặc định gọn hơn, ưu tiên nhìn ngay vị thế đề xuất.

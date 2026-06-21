@@ -67,7 +67,7 @@ async function main() {
   const packageJson = JSON.parse(await read("package.json"));
   const allText = (await Promise.all(sourceFiles.map(read))).join("\n");
 
-  assert(packageJson.version === "1.3.1", "package.json version must be 1.3.1");
+  assert(packageJson.version === "1.3.2", "package.json version must be 1.3.2");
   assert(manifest.name === "FTOKX SIMPLE PWA", "Manifest name must be FTOKX SIMPLE PWA");
   assert(manifest.short_name === "FTOKX", "Manifest short_name must be FTOKX");
   assert(manifest.start_url === "/", "Manifest start_url must be /");
@@ -83,9 +83,9 @@ async function main() {
     assert(info.size > 100, `${iconPath} looks empty`);
   }
 
-  assert(app.includes('const APP_VERSION = "1.3.1"'), "App version must be 1.3.1");
-  assert(sw.includes('ftokx-simple-pwa-v1.3.1'), "Service worker cache version must be 1.3.1");
-  assert(changelog.includes("1.3.1"), "CHANGELOG missing 1.3.1");
+  assert(app.includes('const APP_VERSION = "1.3.2"'), "App version must be 1.3.2");
+  assert(sw.includes('ftokx-simple-pwa-v1.3.2'), "Service worker cache version must be 1.3.2");
+  assert(changelog.includes("1.3.2"), "CHANGELOG missing 1.3.2");
   assert(readme.includes("BTC 20X Discipline Ticket"), "README missing V1.3 title");
 
   assert(app.includes("BTC-USDT-SWAP"), "Missing BTC-USDT-SWAP");
@@ -103,10 +103,14 @@ async function main() {
   assert(allText.includes("PLAN_ONLY"), "PLAN_ONLY action missing");
   assert(allText.includes("LOCKED_RISK"), "LOCKED_RISK action missing");
   assert(allText.includes("Fitness") && allText.includes("Grade"), "Fitness/Grade UI missing");
-  assert(allText.includes("SIZE_BY_GRADE"), "Grade-based sizing missing");
+  assert(allText.includes("MARGIN_BY_GRADE"), "Grade-based margin sizing missing");
   assert(allText.includes("TP_SL_BY_GRADE"), "Grade-based TP/SL missing");
   assert(allText.includes("noChasePct: 0.0025"), "No Chase 0.25% missing");
-  assert(allText.includes("Position notional") || allText.includes("positionUsdt"), "Position notional missing");
+  assert(allText.includes("Vị thế danh nghĩa x20") || allText.includes("notionalUsdt"), "Notional x20 display missing");
+  assert(allText.includes("Vốn ký quỹ") || allText.includes("marginUsdt"), "Default margin display missing");
+  assert(allText.includes("Lãi nếu TP") && allText.includes("Lỗ nếu SL"), "TP/SL PnL display missing");
+  assert(app.includes("defaultMarginUsdt: 50"), "Default 50 USDT margin missing");
+  assert(app.includes("referenceCapitalMinUsdt: 50") && app.includes("referenceCapitalMaxUsdt: 100"), "50-100 USDT capital reference missing");
   assert(allText.includes("VỊ THẾ ĐỀ XUẤT"), "Compact suggested position card missing");
   assert(app.includes("function renderFocusTicket"), "renderFocusTicket function missing");
   assert(allText.includes("compact-details"), "Collapsed compact details UI missing");
@@ -174,7 +178,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("VALIDATION PASSED: FTOKX SIMPLE PWA V1.3.1 BTC 20X Compact Focus package looks safe.");
+  console.log("VALIDATION PASSED: FTOKX SIMPLE PWA V1.3.2 default 50 USDT margin PnL package looks safe.");
 }
 
 main().catch((error) => {

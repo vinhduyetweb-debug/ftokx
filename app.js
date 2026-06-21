@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.1";
+const APP_VERSION = "1.3.2";
 const SESSION_KEY = "ftokx_simple_pwa_v1_session";
 const SETTINGS_KEY = "ftokx_simple_pwa_v1_settings";
 const HISTORY_KEY = "ftokx_simple_pwa_v1_history";
@@ -32,8 +32,11 @@ const TRADING_CONFIG = {
   lossCooldownHours: 6,
   maxLossesPerDay: 1,
   maxTradesPerDay: 1,
-  dailyStopLossUsdt: -2,
-  dailyStopWinUsdt: 2,
+  dailyStopLossUsdt: -6,
+  dailyStopWinUsdt: 6,
+  defaultMarginUsdt: 50,
+  referenceCapitalMinUsdt: 50,
+  referenceCapitalMaxUsdt: 100,
   sideNoiseGapLimit: 0,
   atrPctMin: 0.01,
   atrPctMax: 0.02,
@@ -45,12 +48,12 @@ const TRADING_CONFIG = {
   maxStaleHours: 12
 };
 
-const SIZE_BY_GRADE = {
+const MARGIN_BY_GRADE = {
   A: 50,
-  B: 35,
-  C: 25,
-  D: 15,
-  F: 0
+  B: 50,
+  C: 50,
+  D: 50,
+  F: 50
 };
 
 const TP_SL_BY_GRADE = {
@@ -726,7 +729,7 @@ function getSlogan(context) {
 function buildReason(context) {
   const { action, side, fitness, grade, hardVeto, marketRegime, sideScore, oppositeScore, sideCoreScore } = context;
   if (hardVeto) {
-    return `${hardVeto} Vẫn dựng phiếu phân tích ${side}, nhưng position mặc định = 0 USDT.`;
+    return `${hardVeto} Vẫn dựng phiếu phân tích ${side} với vốn chuẩn 50 USDT để xem lời/lỗ giả định, nhưng trạng thái khóa nghĩa là không nhập lệnh thật.`;
   }
   if (action === "EXECUTABLE") {
     return `${side} đạt ${fitness}% · Grade ${grade}. Regime: ${marketRegime}. Score ${sideScore}/8 so với ${oppositeScore}/8, BTC core ${sideCoreScore}/5. Chỉ vào đúng Limit, có TP/SL, không dời SL.`;
@@ -759,8 +762,9 @@ function roundForTech(value) {
 
 function buildSession(analysis, ticker, now) {
   const reviewAt = new Date(now.getTime() + TRADING_CONFIG.waitMinutes * 60 * 1000).toISOString();
-  const positionUsdt = getPositionUsdt(analysis.action, analysis.grade);
-  const order = buildOrder(analysis, ticker, positionUsdt);
+  const marginUsdt = getMarginUsdt(analysis.action, analysis.grade);
+  const positionUsdt = getPositionUsdt(marginUsdt);
+  const order = buildOrder(analysis, ticker, marginUsdt, positionUsdt);
   const riskTotals = computeRiskTotals([order]);
   const price = formatPrice(ticker, SYMBOL_CONFIG.decimals);
 
@@ -787,9 +791,10 @@ function buildSession(analysis, ticker, now) {
     orders: [order],
     rules: {
       symbol: SYMBOL_CONFIG.symbol,
+      marginUsdt,
       positionUsdt,
       leverage: TRADING_CONFIG.leverage,
-      marginUsdt: Number((positionUsdt / TRADING_CONFIG.leverage).toFixed(2)),
+      notionalUsdt: positionUsdt,
       marginMode: TRADING_CONFIG.marginMode,
       orderType: TRADING_CONFIG.orderType,
       waitMinutes: TRADING_CONFIG.waitMinutes,
@@ -802,14 +807,15 @@ function buildSession(analysis, ticker, now) {
   };
 }
 
-function getPositionUsdt(action, grade) {
-  if (action === "LOCKED_RISK") {
-    return 0;
-  }
-  return SIZE_BY_GRADE[grade] ?? 0;
+function getMarginUsdt(action, grade) {
+  return MARGIN_BY_GRADE[grade] ?? TRADING_CONFIG.defaultMarginUsdt;
 }
 
-function buildOrder(analysis, ticker, positionUsdt) {
+function getPositionUsdt(marginUsdt) {
+  return Number((Number(marginUsdt || 0) * TRADING_CONFIG.leverage).toFixed(2));
+}
+
+function buildOrder(analysis, ticker, marginUsdt, positionUsdt) {
   const gradeParams = TP_SL_BY_GRADE[analysis.grade] || TP_SL_BY_GRADE.F;
   const direction = analysis.decision;
   const pullbackPct = analysis.action === "EXECUTABLE" ? 0.0005 : analysis.action === "WAIT_TRIGGER" ? 0.0015 : 0.0025;
@@ -822,6 +828,7 @@ function buildOrder(analysis, ticker, positionUsdt) {
   const grossWin = positionUsdt * gradeParams.tp;
   const grossLoss = -(positionUsdt * gradeParams.sl);
   const feeEstimate = positionUsdt > 0 ? positionUsdt * TRADING_CONFIG.feeRate * 2 : 0;
+  const btcQty = positionUsdt > 0 && entry > 0 ? positionUsdt / entry : 0;
   const netWin = grossWin - feeEstimate;
   const netLoss = grossLoss - feeEstimate;
   const risk = Math.abs(netLoss);
@@ -839,14 +846,22 @@ function buildOrder(analysis, ticker, positionUsdt) {
     sl: formatPrice(stopLoss, SYMBOL_CONFIG.decimals),
     tpPct: formatPercent(gradeParams.tp),
     slPct: formatPercent(gradeParams.sl),
+    marginUsdt: formatUsdt(marginUsdt),
     positionUsdt: formatUsdt(positionUsdt),
-    marginUsdt: formatUsdt(positionUsdt / TRADING_CONFIG.leverage),
+    notionalUsdt: formatUsdt(positionUsdt),
+    btcQty: formatBtcQty(btcQty),
     leverage: TRADING_CONFIG.leverage,
     marginMode: TRADING_CONFIG.marginMode,
     orderType: TRADING_CONFIG.orderType,
     feeEstimate: formatUsdt(feeEstimate),
     netWin: formatSigned(netWin),
     netLoss: formatSigned(netLoss),
+    grossWin: formatSigned(grossWin),
+    grossLoss: formatSigned(grossLoss),
+    marginRoiWin: formatPercentSigned(marginUsdt > 0 ? netWin / marginUsdt : 0),
+    marginRoiLoss: formatPercentSigned(marginUsdt > 0 ? netLoss / marginUsdt : 0),
+    accountRiskMin: formatPercentSigned(TRADING_CONFIG.referenceCapitalMinUsdt > 0 ? netLoss / TRADING_CONFIG.referenceCapitalMinUsdt : 0),
+    accountRiskMax: formatPercentSigned(TRADING_CONFIG.referenceCapitalMaxUsdt > 0 ? netLoss / TRADING_CONFIG.referenceCapitalMaxUsdt : 0),
     rr: Number(rr.toFixed(2)),
     action: analysis.action,
     grade: analysis.grade,
@@ -869,6 +884,17 @@ function computeRiskTotals(orders) {
 function formatUsdt(value) {
   const number = Number(value || 0);
   return number.toFixed(Number.isInteger(number) ? 0 : 2);
+}
+
+function formatBtcQty(value) {
+  const number = Number(value || 0);
+  return number.toFixed(5);
+}
+
+function formatPercentSigned(value) {
+  const number = Number(value || 0) * 100;
+  const sign = number > 0 ? "+" : "";
+  return `${sign}${number.toFixed(2)}%`;
 }
 
 function formatPercent(value) {
@@ -948,7 +974,10 @@ function renderTicket(session) {
               <th class="price">Limit</th>
               <th class="price">TP</th>
               <th class="price">SL</th>
-              <th class="price">Vị thế</th>
+              <th class="price">Ký quỹ</th>
+              <th class="price">Vị thế x20</th>
+              <th class="price">TP PnL</th>
+              <th class="price">SL PnL</th>
               <th class="price">R:R</th>
             </tr>
           </thead>
@@ -961,11 +990,13 @@ function renderTicket(session) {
     <details class="panel compact-details">
       <summary>Rủi ro ước tính</summary>
       <div class="risk-grid">
-        <div class="metric"><span>Position notional</span><strong>${escapeHtml(order.positionUsdt)} USDT</strong></div>
-        <div class="metric"><span>Ký quỹ ước tính</span><strong>${escapeHtml(order.marginUsdt)} USDT</strong></div>
+        <div class="metric"><span>Vốn ký quỹ/lệnh</span><strong>${escapeHtml(order.marginUsdt)} USDT</strong></div>
+        <div class="metric"><span>Vị thế danh nghĩa x20</span><strong>${escapeHtml(order.notionalUsdt)} USDT</strong></div>
+        <div class="metric"><span>Ước lượng BTC</span><strong>${escapeHtml(order.btcQty)} BTC</strong></div>
         <div class="metric"><span>Đòn bẩy</span><strong>x${escapeHtml(order.leverage)} · ${escapeHtml(order.marginMode)}</strong></div>
-        <div class="metric"><span>Nếu TP</span><strong class="win">${escapeHtml(order.netWin)} USDT</strong></div>
-        <div class="metric"><span>Nếu SL</span><strong class="loss">${escapeHtml(order.netLoss)} USDT</strong></div>
+        <div class="metric"><span>Nếu TP</span><strong class="win">${escapeHtml(order.netWin)} USDT · ${escapeHtml(order.marginRoiWin)}</strong></div>
+        <div class="metric"><span>Nếu SL</span><strong class="loss">${escapeHtml(order.netLoss)} USDT · ${escapeHtml(order.marginRoiLoss)}</strong></div>
+        <div class="metric"><span>Rủi ro so với vốn 50–100</span><strong class="loss">${escapeHtml(order.accountRiskMin)} đến ${escapeHtml(order.accountRiskMax)}</strong></div>
         <div class="metric"><span>Phí ước tính</span><strong>${escapeHtml(order.feeEstimate)} USDT</strong></div>
       </div>
       <p class="muted-text">20x không tha lỗi dời SL. Không DCA futures. Không martingale. Không tăng size sau lỗ.</p>
@@ -991,17 +1022,20 @@ function renderTicket(session) {
 }
 
 function renderFocusTicket(session, order) {
-  const canTrade = Number(order.positionUsdt) > 0 && session.action !== "LOCKED_RISK";
+  const isLocked = session.action === "LOCKED_RISK";
+  const canTrade = !isLocked && session.action !== "PLAN_ONLY";
   const posture = session.action === "EXECUTABLE"
     ? "CÓ THỂ XEM XÉT VÀO LIMIT"
     : session.action === "WAIT_TRIGGER"
       ? "CHỜ TRIGGER, CHƯA CHASE"
       : session.action === "PLAN_ONLY"
-        ? "PHIẾU YẾU, ƯU TIÊN CHỈ NHÌN"
+        ? "PHIẾU YẾU, CHỈ VÀO NẾU ÔNG TỰ CHẤP NHẬN"
         : "KHÓA RỦI RO, KHÔNG VÀO";
-  const sizeLine = canTrade
-    ? `${order.positionUsdt} USDT notional · ký quỹ khoảng ${order.marginUsdt} USDT`
-    : `0 USDT · không mở vị thế thật`;
+  const executeLine = canTrade
+    ? "Có thể nhập tay nếu chấp nhận rủi ro. Không Market, không dời SL."
+    : isLocked
+      ? "App vẫn tính sẵn phiếu 50 USDT để ông nhìn lời/lỗ, nhưng trạng thái là KHÓA RỦI RO. Không nhập OKX."
+      : "Có phiếu 50 USDT để nhìn bài toán, nhưng ưu tiên không xuống tiền khi Grade yếu.";
 
   return `
     <div class="focus-ticket ${canTrade ? "" : "focus-ticket-muted"}">
@@ -1013,19 +1047,22 @@ function renderFocusTicket(session, order) {
         <div class="focus-main ${session.decision === "LONG" ? "decision-long" : "decision-short"}">
           ${escapeHtml(order.direction)}
         </div>
-        <div class="focus-metric"><span>Vị thế</span><strong>${escapeHtml(sizeLine)}</strong></div>
+        <div class="focus-metric"><span>Vốn ký quỹ</span><strong>${escapeHtml(order.marginUsdt)} USDT</strong></div>
+        <div class="focus-metric"><span>Vị thế x20</span><strong>${escapeHtml(order.notionalUsdt)} USDT</strong></div>
+        <div class="focus-metric"><span>Ước lượng BTC</span><strong>${escapeHtml(order.btcQty)} BTC</strong></div>
         <div class="focus-metric"><span>Limit</span><strong>${escapeHtml(order.entry)}</strong></div>
         <div class="focus-metric"><span>Entry zone</span><strong>${escapeHtml(order.entryZone)}</strong></div>
         <div class="focus-metric"><span>TP</span><strong class="win">${escapeHtml(order.tp)} · ${escapeHtml(order.tpPct)}</strong></div>
+        <div class="focus-metric"><span>Lãi nếu TP</span><strong class="win">${escapeHtml(order.netWin)} USDT · ${escapeHtml(order.marginRoiWin)}</strong></div>
         <div class="focus-metric"><span>SL</span><strong class="loss">${escapeHtml(order.sl)} · ${escapeHtml(order.slPct)}</strong></div>
+        <div class="focus-metric"><span>Lỗ nếu SL</span><strong class="loss">${escapeHtml(order.netLoss)} USDT · ${escapeHtml(order.marginRoiLoss)}</strong></div>
         <div class="focus-metric"><span>No chase sau</span><strong>${escapeHtml(order.invalidPrice)}</strong></div>
         <div class="focus-metric"><span>R:R</span><strong>${escapeHtml(order.rr)}R</strong></div>
       </div>
-      <p class="focus-note">${canTrade ? "Nhập tay trên OKX nếu ông chấp nhận rủi ro; không phải lệnh tự động." : "App vẫn cho kế hoạch để nhìn thị trường, nhưng mặc định không xuống tiền."}</p>
+      <p class="focus-note">${escapeHtml(executeLine)}</p>
     </div>
   `;
 }
-
 function getDecisionClass(session) {
   if (session.action === "LOCKED_RISK") return "decision-flat";
   if (session.action === "PLAN_ONLY") return "decision-flat";
@@ -1046,7 +1083,7 @@ function renderRiskWarning(session) {
     return `
       <div class="warning-box">
         <strong>LOCKED_RISK</strong>
-        <p>App vẫn dựng phiếu phân tích để ông nhìn thị trường, nhưng position mặc định bằng 0. Không phá khóa bằng cảm xúc.</p>
+        <p>App vẫn tính sẵn phiếu 50 USDT để ông nhìn lời/lỗ, nhưng trạng thái khóa nghĩa là không nhập lệnh thật. Không phá khóa bằng cảm xúc.</p>
       </div>
     `;
   }
@@ -1099,7 +1136,10 @@ function renderOrderRow(order) {
       <td class="price">${escapeHtml(order.entry)}</td>
       <td class="price">${escapeHtml(order.tp)} <small>${escapeHtml(order.tpPct)}</small></td>
       <td class="price">${escapeHtml(order.sl)} <small>${escapeHtml(order.slPct)}</small></td>
-      <td class="price">${escapeHtml(order.positionUsdt)} USDT</td>
+      <td class="price">${escapeHtml(order.marginUsdt)} USDT</td>
+      <td class="price">${escapeHtml(order.notionalUsdt)} USDT</td>
+      <td class="price win">${escapeHtml(order.netWin)} USDT</td>
+      <td class="price loss">${escapeHtml(order.netLoss)} USDT</td>
       <td class="price">${escapeHtml(order.rr)}R</td>
     </tr>
   `;
@@ -1178,10 +1218,10 @@ function renderScoreDetails(session) {
         <div class="metric"><span>Regime</span><strong>${escapeHtml(analysis.marketRegime)}</strong></div>
       </div>
       <ul class="tech-list">
-        <li>V1.3 chỉ dùng BTC/USDT Futures, Isolated, x20, Limit, không auto trade, không private API.</li>
+        <li>V1.3.2 chỉ dùng BTC/USDT Futures, Isolated, x20, Limit, vốn mặc định 50 USDT/lệnh, không auto trade, không private API.</li>
         <li>Always Plan: app luôn dựng 01 phiếu phân tích BTC. Action quyết định có nên xuống tiền hay chỉ xem.</li>
         <li>Fitness 100 điểm gồm: xu hướng 25, momentum 15, EMA distance 10, ATR 15, volume 10, không extreme 10, Long/Short gap 10, data fresh 5.</li>
-        <li>Grade A/B/C/D/F tự co vị thế: 50 / 35 / 25 / 15 / 0 USDT. LOCKED_RISK luôn 0 USDT.</li>
+        <li>Vốn mặc định/lệnh: 50 USDT ký quỹ. x20 tương đương khoảng 1.000 USDT notional. LOCKED_RISK vẫn tính lời/lỗ giả định nhưng không khuyến nghị nhập lệnh thật.</li>
         <li>BTC close ${analysis.btc.close}, EMA20 ${analysis.btc.ema20}, EMA50 ${analysis.btc.ema50}, EMA50 slope ${escapeHtml(analysis.btc.ema50Slope)}.</li>
         <li>BTC core Long/Short: ${analysis.btcLongCoreScore}/5 · ${analysis.btcShortCoreScore}/5. Khoảng cách EMA20: ${analysis.filters.distanceFromEma20}%.</li>
         <li>ATR% ${analysis.filters.btcAtrPct}% · vùng chuẩn ${analysis.filters.atrPctMin}% đến ${analysis.filters.atrPctMax}% · volume ratio ${analysis.filters.volumeRatio}x.</li>
@@ -1602,6 +1642,9 @@ function createPaperTestFromSession(session, signature) {
       entry: order.entry,
       tp: order.tp,
       sl: order.sl,
+      marginUsdt: order.marginUsdt,
+      notionalUsdt: order.notionalUsdt,
+      btcQty: order.btcQty,
       netWin: order.netWin,
       netLoss: order.netLoss,
       lastPrice: order.entry,
