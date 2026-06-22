@@ -1250,3 +1250,9 @@ small {
     grid-template-columns: 1fr;
   }
 }
+
+/* V2.1 CONFIG180 WATCHLIST */
+.watchlist-box {
+  border-color: rgba(46, 203, 255, 0.42);
+  background: linear-gradient(180deg, rgba(46, 203, 255, 0.12), rgba(11, 17, 24, 0.92));
+}

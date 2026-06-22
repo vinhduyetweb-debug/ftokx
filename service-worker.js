@@ -1,4 +1,4 @@
-const CACHE_NAME = "ftokx-simple-pwa-v2.0.0-final";
+const CACHE_NAME = "ftokx-simple-pwa-v2.2.0-config180-position-range";
 const APP_SHELL = [
   "/",
   "/index.html",

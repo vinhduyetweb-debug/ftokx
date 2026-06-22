@@ -4,22 +4,22 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#05080d" />
-    <meta name="description" content="FTOKX SIMPLE PWA V2.0 FINAL — Futures Discipline OS. PWA tĩnh dùng dữ liệu public OKX, không private API, không auto trade." />
+    <meta name="description" content="FTOKX SIMPLE PWA V2.2 CONFIG180 POSITION RANGE — SHORT Trend x5, position 500–1000 USD, 4H closed candles, execution 15M, public OKX data only, no live trade." />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="stylesheet" href="/style.css" />
-    <title>FTOKX SIMPLE PWA V2.0 FINAL</title>
+    <title>FTOKX SIMPLE PWA V2.2 CONFIG180</title>
   </head>
   <body>
-    <noscript>App cần bật JavaScript để cập nhật dữ liệu và lập phiếu.</noscript>
+    <noscript>App cần bật JavaScript để cập nhật dữ liệu và lập phiếu quan sát.</noscript>
 
     <main class="app-shell" aria-live="polite">
       <header class="hero-card">
-        <div class="eyebrow">FUTURES DISCIPLINE OS · V2.0 FINAL</div>
+        <div class="eyebrow">SHORT TREND WATCHLIST · V2.2 CONFIG180 RANGE</div>
         <h1>FTOKX SIMPLE PWA</h1>
-        <p class="guard-line">App chỉ lập phiếu. Người giữ tay.</p>
-        <p class="guard-subline">Command Center · Market Regime · Session Quality · Contract · Capital Guard · BTC Sweep.</p>
+        <p class="guard-line">LÃO SHORT TREND V1.4.2 — WATCHLIST CONFIG 180.</p>
+        <p class="guard-subline">4H closed candles · Execution 15M · SHORT only · Isolated x5 · vị thế 500–1000 USD · NO_LIVE.</p>
         <div class="status-row">
           <span id="networkStatus" class="pill">Đang online</span>
           <span id="dataStatus" class="pill muted">CHƯA CẬP NHẬT DỮ LIỆU</span>
@@ -34,7 +34,7 @@
       <section id="todayView">
         <section class="action-card compact-action">
           <button id="refreshBtn" class="primary-btn" type="button">
-            CẬP NHẬT &amp; LẬP PHIẾU BTC
+            CẬP NHẬT &amp; SOI CONFIG 180
           </button>
           <div class="quick-actions">
             <button id="clearSessionBtn" class="ghost-btn" type="button">Xóa phiên hôm nay</button>
@@ -47,24 +47,38 @@
                 <p id="watchStatus" class="muted-text">Chưa bật. Dùng điện thoại phụ: mở app, bật màn hình, cắm sạc nếu canh lâu.</p>
               </div>
               <div class="watch-actions">
-                <button id="watchToggleBtn" class="ghost-btn watch-main" type="button">BẬT LUÔN ONLINE</button>
+                <button id="watchToggleBtn" class="ghost-btn" type="button">BẬT LUÔN ONLINE</button>
                 <button id="testAlertBtn" class="ghost-btn" type="button">Test chuông/rung</button>
-                <button id="stopAlertBtn" class="ghost-btn danger" type="button">Dừng báo động</button>
+                <button id="stopAlertBtn" class="ghost-btn" type="button">Tắt chuông</button>
               </div>
             </div>
-            <p class="install-hint">Bản V2.0 FINAL chỉ dùng BTC/USDT Futures, Isolated x20, Limit, Survival TP1/TP2, Market Regime Pro, Session Quality, Pre-Trade Contract, Capital Ladder, Mistake Counter, Weekly Review & BTC Sweep, Paper Mode. Không backend, không private API, không auto trade. Watch Mode chỉ hú khi EXECUTABLE; dữ liệu thị trường cần internet. Offline chỉ xem lại phiếu đã lưu.</p>
+            <p class="muted-text">Watch Mode chỉ báo khi Config 180 khớp điều kiện. App không đặt lệnh, không private API, không auto trade.</p>
           </details>
         </section>
 
-        <section id="messageArea" class="message-card hidden"></section>
+        <section id="messageArea" class="message-area"></section>
         <section id="ticketArea" class="ticket-area"></section>
       </section>
 
       <section id="historyView" class="hidden">
-        <section id="historyArea" class="history-area"></section>
+        <section class="panel">
+          <h2>Lịch sử quan sát</h2>
+          <p class="muted-text">Dữ liệu lưu cục bộ trên máy. Hãy xuất JSON định kỳ nếu muốn sao lưu.</p>
+          <div class="history-actions">
+            <button id="exportHistoryBtn" class="ghost-btn" type="button">Xuất lịch sử JSON</button>
+            <label class="import-label">
+              Nhập lịch sử JSON
+              <input id="historyImportInput" type="file" accept="application/json" />
+            </label>
+          </div>
+          <div id="historyArea"></div>
+        </section>
       </section>
 
-      <input id="historyImportInput" class="hidden" type="file" accept="application/json" />
+      <footer class="footer-note">
+        <p>Offline chỉ xem lại phiếu đã lưu. Dữ liệu live cần mạng và OKX public endpoint qua Vercel rewrite.</p>
+        <p>Slogan: Bộ lọc tốt không làm ta nóng tay; nó bắt ta chờ đúng cửa.</p>
+      </footer>
     </main>
 
     <script src="/app.js" defer></script>

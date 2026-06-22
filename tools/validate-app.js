@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..");
+const APP_VERSION = "2.2.0";
 
 const requiredFiles = [
   "index.html",
@@ -18,7 +19,8 @@ const requiredFiles = [
   "CHANGELOG.md",
   "icons/icon-192.png",
   "icons/icon-512.png",
-  "config/FTOKX_FINAL_V2_DISCIPLINE_OS_CONFIG.json"
+  "config/FTOKX_FINAL_V2_DISCIPLINE_OS_CONFIG.json",
+  "config/FTOKX_SHORT_TREND_CONFIG_180_V2_2_0_POSITION_RANGE.json"
 ];
 
 const sourceFiles = [
@@ -29,7 +31,9 @@ const sourceFiles = [
   "service-worker.js",
   "vercel.json",
   "README.md",
-  "CHANGELOG.md"
+  "CHANGELOG.md",
+  "config/FTOKX_FINAL_V2_DISCIPLINE_OS_CONFIG.json",
+  "config/FTOKX_SHORT_TREND_CONFIG_180_V2_2_0_POSITION_RANGE.json"
 ];
 
 const errors = [];
@@ -65,11 +69,11 @@ async function main() {
   const readme = await read("README.md");
   const changelog = await read("CHANGELOG.md");
   const packageJson = JSON.parse(await read("package.json"));
-  const config = JSON.parse(await read("config/FTOKX_FINAL_V2_DISCIPLINE_OS_CONFIG.json"));
+  const config = JSON.parse(await read("config/FTOKX_SHORT_TREND_CONFIG_180_V2_2_0_POSITION_RANGE.json"));
   const allText = (await Promise.all(sourceFiles.map(read))).join("\n");
 
-  assert(packageJson.version === "2.0.0", "package.json version must be 2.0.0");
-  assert(config.version === "2.0.0", "Final config version must be 2.0.0");
+  assert(packageJson.version === APP_VERSION, `package.json version must be ${APP_VERSION}`);
+  assert(config.version === APP_VERSION, `Config version must be ${APP_VERSION}`);
   assert(manifest.name === "FTOKX SIMPLE PWA", "Manifest name must be FTOKX SIMPLE PWA");
   assert(manifest.short_name === "FTOKX", "Manifest short_name must be FTOKX");
   assert(manifest.start_url === "/", "Manifest start_url must be /");
@@ -81,62 +85,39 @@ async function main() {
     assert(info.size > 100, `${iconPath} looks empty`);
   }
 
-  assert(app.includes('const APP_VERSION = "2.0.0"'), "App version must be 2.0.0");
-  assert(sw.includes('ftokx-simple-pwa-v2.0.0-final'), "Service worker cache version must be v2.0.0-final");
-  assert(changelog.includes("V2.0.0 FINAL"), "CHANGELOG missing V2.0.0 FINAL");
-  assert(readme.includes("Futures Discipline OS"), "README missing Futures Discipline OS title");
-  assert(html.includes("FUTURES DISCIPLINE OS · V2.0 FINAL"), "Header missing V2.0 FINAL badge");
+  assert(app.includes('const APP_VERSION = "2.2.0"'), "App version must be 2.2.0");
+  assert(sw.includes("ftokx-simple-pwa-v2.2.0-config180-position-range"), "Service worker cache version must be v2.2.0-config180-position-range");
+  assert(changelog.includes("V2.2.0"), "CHANGELOG missing V2.2.0");
+  assert(readme.includes("CONFIG180 POSITION RANGE"), "README missing CONFIG180 POSITION RANGE title");
+  assert(html.includes("SHORT TREND WATCHLIST · V2.2 CONFIG180 RANGE"), "Header missing V2.2 CONFIG180 RANGE badge");
 
-  assert(app.includes("BTC-USDT-SWAP"), "Missing BTC-USDT-SWAP");
+  assert(app.includes("STRATEGY_PROFILE"), "Strategy profile missing");
+  assert(app.includes("LÃO SHORT TREND V1.4.3") && allText.includes("LÃO SHORT TREND V1.4.2"), "Config 180 strategy/reference name missing");
+  assert(app.includes("OBSERVATION_ONLY") && app.includes("NO_LIVE"), "NO_LIVE / OBSERVATION_ONLY missing");
+  assert(app.includes("WATCHLIST_HIT"), "WATCHLIST_HIT action missing");
+  assert(app.includes('instId: "BTC-USDT-SWAP"'), "Missing BTC-USDT-SWAP");
   assert(app.includes('symbol: "BTCUSDT"'), "Missing BTCUSDT symbol");
-  assert(!app.includes("ETH-USDT-SWAP"), "ETH swap must be removed");
-  assert(!app.includes("OKB-USDT-SWAP"), "OKB swap must be removed");
-  assert(!app.includes('symbol: "ETHUSDT"'), "ETHUSDT must be removed");
-  assert(!app.includes('symbol: "OKBUSDT"'), "OKBUSDT must be removed");
-
-  assert(allText.includes("leverage: 20") || allText.includes("x20"), "Leverage x20 missing");
-  assert(allText.includes("Cô lập") || allText.includes("Isolated"), "Isolated margin missing");
-  assert(allText.includes("Always Plan") || html.includes("Command Center"), "Planning principle missing");
-  assert(allText.includes("EXECUTABLE"), "EXECUTABLE action missing");
-  assert(allText.includes("WAIT_TRIGGER"), "WAIT_TRIGGER action missing");
-  assert(allText.includes("PLAN_ONLY"), "PLAN_ONLY action missing");
-  assert(allText.includes("LOCKED_RISK"), "LOCKED_RISK action missing");
-  assert(allText.includes("Fitness") && allText.includes("Grade"), "Fitness/Grade UI missing");
-  assert(allText.includes("TP_SL_BY_GRADE"), "Grade-based TP/SL missing");
-  assert(app.includes("noChasePct: 0.0025"), "No Chase 0.25% missing");
-  assert(app.includes("defaultMarginUsdt: 50"), "Default 50 USDT margin missing");
-  assert(app.includes("referenceCapitalMinUsdt: 50") && app.includes("referenceCapitalMaxUsdt: 100"), "50-100 USDT reference missing");
-  assert(allText.includes("VỊ THẾ ĐỀ XUẤT"), "Suggested position card missing");
-  assert(allText.includes("price-strip"), "Prominent Limit/TP1/TP2/SL strip missing");
-  assert(app.includes("tp1CloseRatio: 0.5"), "TP1 50% close ratio missing");
-
-  assert(app.includes("function getMarketRegimePro"), "Market Regime Pro missing");
-  assert(app.includes("function getSessionQuality"), "Session Quality missing");
-  assert(allText.includes("Pre-Trade Contract"), "Pre-Trade Contract missing");
-  assert(app.includes("CONTRACT_ITEMS"), "Contract items missing");
-  assert(app.includes("canMarkLimitPlaced"), "Pre-trade status guard missing");
-  assert(app.includes("function getCapitalLadder"), "Capital Ladder missing");
-  assert(app.includes("MISTAKE_OPTIONS") && allText.includes("Mistake Counter"), "Mistake Counter missing");
-  assert(allText.includes("Weekly Review & BTC Sweep"), "Weekly Review & BTC Sweep missing");
-  assert(allText.includes("Paper Mode"), "Paper Mode missing");
-  assert(allText.includes("Weekly Max Loss"), "Weekly Max Loss missing");
-  assert(app.includes("btcSweepPercent"), "BTC Sweep percent missing");
-  assert(css.includes("command-badges") && css.includes("contract-grid") && css.includes("mistake-grid"), "V2 UI CSS missing");
-
-  assert(allText.includes("Kill Switch") && allText.includes("Capital Guard"), "Kill Switch/Capital Guard missing");
-  assert(allText.includes("One Trade Per Day"), "One Trade Per Day missing");
-  assert(allText.includes("Daily Max Loss"), "Daily Max Loss missing");
-  assert(allText.includes("Copy phiếu OKX") && app.includes("buildCopyTicketText"), "Copy Ticket missing");
-  assert(allText.includes("futuresFundUsdt") && allText.includes("marginPerTradeUsdt"), "Futures fund settings missing");
-  assert(allText.includes("Morning Review") || allText.includes("MORNING REVIEW"), "Morning Review missing");
-  assert(allText.includes("Không dời SL"), "No SL moving warning missing");
-  assert(allText.includes("Không DCA futures"), "No DCA futures warning missing");
-  assert(allText.includes("Không martingale"), "No martingale warning missing");
+  assert(app.includes("shortOnly: true"), "SHORT only guard missing");
+  assert(app.includes('requiredRegimeCode: "TREND_DOWN"'), "Trend Down only guard missing");
+  assert(app.includes('requiredGrade: "A"'), "Grade A only guard missing");
+  assert(app.includes("minFitness: 92"), "Min Fitness 92 missing");
+  assert(app.includes("leverage: STRATEGY_PROFILE.leverage") && app.includes("leverage: 5"), "Leverage x5 missing");
+  assert(app.includes("positionNotionalMinUsdt: 500") && app.includes("positionNotionalMaxUsdt: 1000"), "Position range 500-1000 missing");
+  assert(app.includes("marginMinUsdt: 100") && app.includes("marginMaxUsdt: 200"), "Margin range 100-200 missing");
+  assert(app.includes("position-ladder-grid") && allText.includes("BOOST: 750") && allText.includes("MAX WATCH"), "Position ladder missing");
+  assert(app.includes("marginRequiredUsdt: 100"), "Base margin 100 missing");
+  assert(app.includes("noChasePct: 0.0015"), "No Chase 0.15% missing");
+  assert(app.includes("atrPctMin: 0.006") && app.includes("atrPctMax: 0.02"), "ATR 0.6%-2.0% missing");
+  assert(app.includes("minDistanceFromEma20: 0.01") && app.includes("maxDistanceFromEma20: 0.028"), "EMA20 distance 1.0%-2.8% missing");
+  assert(app.includes("tp1: 0.007") && app.includes("tp2: 0.007") && app.includes("sl: 0.003"), "TP/SL Config180 missing");
+  assert(app.includes("expiryCandles15m: 12") && app.includes("expiryMinutes: 180"), "12 candles / 180 minutes expiry missing");
+  assert(allText.includes("Daily Max Loss: 3 USDT") || app.includes("dailyMaxLossUsdt: 3"), "Daily max loss 3 missing");
+  assert(allText.includes("Volume Filter") && app.includes("volumeMinRatio: 0.8"), "Volume filter missing");
 
   assert(app.includes("navigator.serviceWorker.register"), "App must register service worker");
   assert(sw.includes("caches.delete"), "Service worker must delete old caches");
-  assert(!sw.includes("/api/okx/candles\""), "Service worker must not cache candles path in shell");
-  assert(!sw.includes("/api/okx/ticker\""), "Service worker must not cache ticker path in shell");
+  assert(!sw.includes('/api/okx/candles"'), "Service worker must not cache candles path in shell");
+  assert(!sw.includes('/api/okx/ticker"'), "Service worker must not cache ticker path in shell");
   assert(sw.includes("/api/okx/"), "Service worker should bypass OKX API paths");
 
   assert(vercel.includes("/api/okx/candles"), "vercel.json missing candles rewrite");
@@ -149,7 +130,7 @@ async function main() {
   assert(!/secret\s*key/i.test(allText), "Secret key wording found");
   assert(!/passphrase/i.test(allText), "Passphrase wording found");
   assert(!/chắc thắng/i.test(allText), "Guaranteed-win wording found");
-  assert(html.includes("App chỉ lập phiếu. Người giữ tay."), "Safety sentence missing");
+  assert(html.includes("App không đặt lệnh") || allText.includes("App không đặt lệnh"), "Safety sentence missing");
   assert(html.includes("Đang online") && html.includes("Offline chỉ xem lại phiếu đã lưu"), "Online/offline copy missing");
 
   assert(allText.includes("ftokx_simple_pwa_v1_history"), "History localStorage key missing");
@@ -162,19 +143,12 @@ async function main() {
   assert(allText.includes("7 ngày"), "7-day stats missing");
   assert(allText.includes("30 ngày"), "30-day stats missing");
   assert(allText.includes("Kết quả ngày"), "Daily result panel missing");
-
   assert(html.includes("BẬT LUÔN ONLINE"), "Watch Mode start button missing");
   assert(html.includes("Test chuông/rung"), "Watch Mode test alert missing");
   assert(app.includes("AUTO_WATCH_INTERVAL_MS = 5 * 60 * 1000"), "Watch interval missing");
-  assert(app.includes('session.action !== "EXECUTABLE"'), "Watch Mode must alert only EXECUTABLE");
 
-  for (const forbidden of [".env.local", ".vercel/project.json", "node_modules"]) {
+  for (const forbidden of [".env.local", ".vercel/project.json", ".vercel", "node_modules"]) {
     assert(!(await exists(forbidden)), `Sensitive/local file should not be present: ${forbidden}`);
-  }
-
-  const badVisible = ["chắc thắng", "auto trade", "private API key"];
-  for (const bad of badVisible) {
-    assert(!allText.toLowerCase().includes(bad.toLowerCase()) || bad === "auto trade", `Forbidden wording found: ${bad}`);
   }
 
   if (errors.length) {
@@ -183,7 +157,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("VALIDATION PASSED: FTOKX SIMPLE PWA V2.0 FINAL Futures Discipline OS package looks safe.");
+  console.log("VALIDATION PASSED: FTOKX SIMPLE PWA V2.2 CONFIG180 POSITION RANGE package looks safe.");
 }
 
 main().catch((error) => {

@@ -1,7 +1,7 @@
 {
   "name": "FTOKX SIMPLE PWA",
   "short_name": "FTOKX",
-  "description": "V2.0 FINAL Futures Discipline OS — BTC/USDT x20, Market Regime, Contract, Capital Guard, Weekly BTC Sweep; public OKX data only.",
+  "description": "V2.2 CONFIG180 POSITION RANGE — BTC/USDT SHORT Trend x5, position 500–1000 USD, 4H closed candles, execution 15M, public OKX data only, NO_LIVE.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#05080d",

@@ -1,4 +1,4 @@
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.2.0";
 const SESSION_KEY = "ftokx_simple_pwa_v1_session";
 const SETTINGS_KEY = "ftokx_simple_pwa_v1_settings";
 const HISTORY_KEY = "ftokx_simple_pwa_v1_history";
@@ -6,14 +6,44 @@ const ALERT_LOG_KEY = "ftokx_simple_pwa_v1_alert_log";
 const PAPER_TESTS_KEY = "ftokx_simple_pwa_v1_paper_tests";
 const PRE_TRADE_CONTRACT_KEY = "ftokx_simple_pwa_v2_pretrade_contract";
 
+const STRATEGY_PROFILE = {
+  id: "LAO_SHORT_TREND_V1_4_3_CONFIG_180_POSITION_RANGE",
+  name: "LÃO SHORT TREND V1.4.3 — CONFIG 180 POSITION RANGE",
+  status: "WATCHLIST / OBSERVATION_ONLY / NO_LIVE",
+  signalTimeframe: "4H closed candles only",
+  executionTimeframe: "15M",
+  direction: "SHORT only",
+  shortOnly: true,
+  observationOnly: true,
+  noLive: true,
+  requiredRegimeCode: "TREND_DOWN",
+  requiredRegimeLabel: "Trend Down only",
+  requiredGrade: "A",
+  minFitness: 92,
+  positionNotionalUsdt: 500,
+  positionNotionalMinUsdt: 500,
+  positionNotionalBaseUsdt: 500,
+  positionNotionalMaxUsdt: 1000,
+  positionNotionalStepUsdt: 250,
+  marginRequiredUsdt: 100,
+  marginMinUsdt: 100,
+  marginBaseUsdt: 100,
+  marginMaxUsdt: 200,
+  leverage: 5,
+  expiryCandles15m: 12,
+  expiryMinutes: 180,
+  source: "Backtest reference 01.rtf"
+};
+
+
 const CAPITAL_DEFAULTS = {
-  futuresFundUsdt: 100,
-  marginPerTradeUsdt: 50,
-  dailyMaxLossUsdt: 6,
+  futuresFundUsdt: 200,
+  marginPerTradeUsdt: STRATEGY_PROFILE.marginBaseUsdt,
+  dailyMaxLossUsdt: 3,
   oneTradePerDay: true,
-  paperMode: false,
+  paperMode: true,
   btcSweepPercent: 50,
-  weeklyMaxLossUsdt: 15
+  weeklyMaxLossUsdt: 9
 };
 const CACHE_BUSTER = () => `ts=${Date.now()}`;
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
@@ -34,29 +64,31 @@ const SYMBOL_CONFIG = {
 
 const TRADING_CONFIG = {
   marginMode: "Cô lập",
-  leverage: 20,
+  leverage: STRATEGY_PROFILE.leverage,
   orderType: "Limit",
-  waitMinutes: 20,
+  waitMinutes: STRATEGY_PROFILE.expiryMinutes,
   reviewAfterFillMinutes: 60,
   feeRate: 0.0005,
-  noChasePct: 0.0025,
+  noChasePct: 0.0015,
   tp1CloseRatio: 0.5,
   lossCooldownHours: 6,
   maxLossesPerDay: 1,
   maxTradesPerDay: 1,
   sessionLateHour: 23,
   sessionLateMinute: 30,
-  weeklyStopLossUsdt: -15,
-  dailyStopLossUsdt: -6,
-  dailyStopWinUsdt: 6,
-  defaultMarginUsdt: 50,
-  referenceCapitalMinUsdt: 50,
-  referenceCapitalMaxUsdt: 100,
+  weeklyStopLossUsdt: -9,
+  dailyStopLossUsdt: -3,
+  dailyStopWinUsdt: 3,
+  defaultMarginUsdt: STRATEGY_PROFILE.marginRequiredUsdt,
+  referenceCapitalMinUsdt: STRATEGY_PROFILE.marginMinUsdt,
+  referenceCapitalMaxUsdt: STRATEGY_PROFILE.marginMaxUsdt,
   sideNoiseGapLimit: 0,
-  atrPctMin: 0.01,
+  atrPctMin: 0.006,
   atrPctMax: 0.02,
-  minDistanceFromEma20: 0.004,
-  weakDistanceFromEma20: 0.0025,
+  minDistanceFromEma20: 0.01,
+  maxDistanceFromEma20: 0.028,
+  weakDistanceFromEma20: 0.006,
+  volumeMinRatio: 0.8,
   extremeRangeMultiplier: 1.6,
   ema50SlopeLookback: 3,
   minFreshHours: 6,
@@ -64,19 +96,19 @@ const TRADING_CONFIG = {
 };
 
 const MARGIN_BY_GRADE = {
-  A: 50,
-  B: 50,
-  C: 50,
-  D: 50,
-  F: 50
+  A: STRATEGY_PROFILE.marginBaseUsdt,
+  B: STRATEGY_PROFILE.marginBaseUsdt,
+  C: STRATEGY_PROFILE.marginBaseUsdt,
+  D: STRATEGY_PROFILE.marginBaseUsdt,
+  F: STRATEGY_PROFILE.marginBaseUsdt
 };
 
 const TP_SL_BY_GRADE = {
-  A: { tp1: 0.006, tp2: 0.012, sl: 0.006, label: "A Survival" },
-  B: { tp1: 0.005, tp2: 0.01, sl: 0.005, label: "B Default" },
-  C: { tp1: 0.0045, tp2: 0.008, sl: 0.0045, label: "C Cautious" },
-  D: { tp1: 0.004, tp2: 0.006, sl: 0.004, label: "D Observe" },
-  F: { tp1: 0.0035, tp2: 0.005, sl: 0.0035, label: "F Paper" }
+  A: { tp1: 0.007, tp2: 0.007, sl: 0.003, label: "Config 180 · A Only" },
+  B: { tp1: 0.007, tp2: 0.007, sl: 0.003, label: "Config 180 · Watch" },
+  C: { tp1: 0.007, tp2: 0.007, sl: 0.003, label: "Config 180 · Paper" },
+  D: { tp1: 0.007, tp2: 0.007, sl: 0.003, label: "Config 180 · Paper" },
+  F: { tp1: 0.007, tp2: 0.007, sl: 0.003, label: "Config 180 · No Trade" }
 };
 
 const STATUS_OPTIONS = [
@@ -119,7 +151,11 @@ const CONTRACT_ITEMS = [
 const SLOGANS = {
   EXECUTABLE: [
     "Lệnh đẹp vẫn phải nhỏ, vì thị trường không nợ ta điều gì.",
-    "20x chỉ dùng được khi SL là luật, không phải gợi ý."
+    "x5 chỉ có nghĩa khi SL là luật, không phải gợi ý."
+  ],
+  WATCHLIST_HIT: [
+    "Setup đẹp cũng chỉ là mẫu quan sát khi chưa qua thời gian kiểm chứng.",
+    "Backtest cho ta bộ lọc; thị trường thật bắt ta giữ tay."
   ],
   WAIT_TRIGGER: [
     "Giá chạy mất thì để nó chạy; tiền còn là cơ hội còn.",
@@ -193,18 +229,30 @@ function init() {
 
 function saveSettingsOnce() {
   const existing = loadSettingsData();
-  saveSettingsData({
-    ...CAPITAL_DEFAULTS,
+  const sameStrategy = existing.strategy === STRATEGY_PROFILE.id;
+  const seed = sameStrategy ? { ...CAPITAL_DEFAULTS, ...existing } : {
     ...existing,
-    futuresFundUsdt: getPositiveNumber(existing.futuresFundUsdt, CAPITAL_DEFAULTS.futuresFundUsdt),
-    marginPerTradeUsdt: getPositiveNumber(existing.marginPerTradeUsdt, CAPITAL_DEFAULTS.marginPerTradeUsdt),
-    dailyMaxLossUsdt: getPositiveNumber(existing.dailyMaxLossUsdt, CAPITAL_DEFAULTS.dailyMaxLossUsdt),
-    oneTradePerDay: existing.oneTradePerDay !== false,
-    paperMode: existing.paperMode === true,
-    btcSweepPercent: clampNumber(existing.btcSweepPercent, 10, 80, CAPITAL_DEFAULTS.btcSweepPercent),
-    weeklyMaxLossUsdt: getPositiveNumber(existing.weeklyMaxLossUsdt, CAPITAL_DEFAULTS.weeklyMaxLossUsdt),
+    futuresFundUsdt: CAPITAL_DEFAULTS.futuresFundUsdt,
+    marginPerTradeUsdt: CAPITAL_DEFAULTS.marginPerTradeUsdt,
+    dailyMaxLossUsdt: CAPITAL_DEFAULTS.dailyMaxLossUsdt,
+    oneTradePerDay: true,
+    paperMode: true,
+    btcSweepPercent: CAPITAL_DEFAULTS.btcSweepPercent,
+    weeklyMaxLossUsdt: CAPITAL_DEFAULTS.weeklyMaxLossUsdt
+  };
+  saveSettingsData({
+    ...seed,
+    futuresFundUsdt: getPositiveNumber(seed.futuresFundUsdt, CAPITAL_DEFAULTS.futuresFundUsdt),
+    marginPerTradeUsdt: getPositiveNumber(seed.marginPerTradeUsdt, CAPITAL_DEFAULTS.marginPerTradeUsdt),
+    dailyMaxLossUsdt: getPositiveNumber(seed.dailyMaxLossUsdt, CAPITAL_DEFAULTS.dailyMaxLossUsdt),
+    oneTradePerDay: seed.oneTradePerDay !== false,
+    paperMode: seed.paperMode !== false,
+    btcSweepPercent: clampNumber(seed.btcSweepPercent, 10, 80, CAPITAL_DEFAULTS.btcSweepPercent),
+    weeklyMaxLossUsdt: getPositiveNumber(seed.weeklyMaxLossUsdt, CAPITAL_DEFAULTS.weeklyMaxLossUsdt),
     version: APP_VERSION,
-    strategy: "BTC_20X_DISCIPLINE_TICKET",
+    strategy: STRATEGY_PROFILE.id,
+    strategyName: STRATEGY_PROFILE.name,
+    profileStatus: STRATEGY_PROFILE.status,
     createdAt: existing.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -230,6 +278,18 @@ function getPositiveNumber(value, fallback) {
   return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
+function clampMarginForPositionRange(value, fallback = CAPITAL_DEFAULTS.marginPerTradeUsdt) {
+  return clampNumber(value, STRATEGY_PROFILE.marginMinUsdt, STRATEGY_PROFILE.marginMaxUsdt, fallback);
+}
+
+function getNotionalFromMargin(marginUsdt) {
+  return clampNumber(Number(marginUsdt || 0) * TRADING_CONFIG.leverage, STRATEGY_PROFILE.positionNotionalMinUsdt, STRATEGY_PROFILE.positionNotionalMaxUsdt, STRATEGY_PROFILE.positionNotionalBaseUsdt);
+}
+
+function getPositionRangeCopy() {
+  return `${formatUsdt(STRATEGY_PROFILE.positionNotionalMinUsdt)}–${formatUsdt(STRATEGY_PROFILE.positionNotionalMaxUsdt)} USD`;
+}
+
 function clampNumber(value, min, max, fallback) {
   const number = Number(value);
   if (!Number.isFinite(number)) {
@@ -241,8 +301,8 @@ function clampNumber(value, min, max, fallback) {
 function getCapitalSettings() {
   const settings = loadSettingsData();
   return {
-    futuresFundUsdt: clampNumber(settings.futuresFundUsdt, 20, 10000, CAPITAL_DEFAULTS.futuresFundUsdt),
-    marginPerTradeUsdt: clampNumber(settings.marginPerTradeUsdt, 5, 1000, CAPITAL_DEFAULTS.marginPerTradeUsdt),
+    futuresFundUsdt: clampNumber(settings.futuresFundUsdt, 100, 10000, CAPITAL_DEFAULTS.futuresFundUsdt),
+    marginPerTradeUsdt: clampMarginForPositionRange(settings.marginPerTradeUsdt, CAPITAL_DEFAULTS.marginPerTradeUsdt),
     dailyMaxLossUsdt: clampNumber(settings.dailyMaxLossUsdt, 1, 500, CAPITAL_DEFAULTS.dailyMaxLossUsdt),
     weeklyMaxLossUsdt: clampNumber(settings.weeklyMaxLossUsdt, 5, 1000, CAPITAL_DEFAULTS.weeklyMaxLossUsdt),
     btcSweepPercent: clampNumber(settings.btcSweepPercent, 10, 80, CAPITAL_DEFAULTS.btcSweepPercent),
@@ -255,8 +315,8 @@ function saveCapitalSettings(nextSettings) {
   const current = loadSettingsData();
   saveSettingsData({
     ...current,
-    futuresFundUsdt: clampNumber(nextSettings.futuresFundUsdt, 20, 10000, CAPITAL_DEFAULTS.futuresFundUsdt),
-    marginPerTradeUsdt: clampNumber(nextSettings.marginPerTradeUsdt, 5, 1000, CAPITAL_DEFAULTS.marginPerTradeUsdt),
+    futuresFundUsdt: clampNumber(nextSettings.futuresFundUsdt, 100, 10000, CAPITAL_DEFAULTS.futuresFundUsdt),
+    marginPerTradeUsdt: clampMarginForPositionRange(nextSettings.marginPerTradeUsdt, CAPITAL_DEFAULTS.marginPerTradeUsdt),
     dailyMaxLossUsdt: clampNumber(nextSettings.dailyMaxLossUsdt, 1, 500, CAPITAL_DEFAULTS.dailyMaxLossUsdt),
     weeklyMaxLossUsdt: clampNumber(nextSettings.weeklyMaxLossUsdt, 5, 1000, CAPITAL_DEFAULTS.weeklyMaxLossUsdt),
     btcSweepPercent: clampNumber(nextSettings.btcSweepPercent, 10, 80, CAPITAL_DEFAULTS.btcSweepPercent),
@@ -445,7 +505,7 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
   ];
 
   const atrOk = Number.isFinite(btcAtrPct) && btcAtrPct >= TRADING_CONFIG.atrPctMin && btcAtrPct <= TRADING_CONFIG.atrPctMax;
-  const volumeOk = btcVolumePositive && volumeRatio >= 0.6;
+  const volumeOk = btcVolumePositive && volumeRatio >= TRADING_CONFIG.volumeMinRatio;
   const freshOk = dataFreshness.status === "FRESH";
   const longChecks = [
     latest.close > btc.ema20,
@@ -472,7 +532,7 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
   const shortScore = countTrue(shortChecks);
   const btcLongCoreScore = countTrue(btcLongCoreChecks);
   const btcShortCoreScore = countTrue(btcShortCoreChecks);
-  const side = pickPlanSide({
+  const rawSide = pickPlanSide({
     longScore,
     shortScore,
     btcLongCoreScore,
@@ -480,6 +540,7 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
     close: latest.close,
     ema20: btc.ema20
   });
+  const side = STRATEGY_PROFILE.shortOnly ? "SHORT" : rawSide;
   const gap = Math.abs(longScore - shortScore);
   const sideScore = side === "LONG" ? longScore : shortScore;
   const oppositeScore = side === "LONG" ? shortScore : longScore;
@@ -511,14 +572,18 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
     btcVolumePositive,
     volumeRatio,
     side,
+    rawSide,
     gap,
     cooldown: getCooldownState(now),
     sideScore,
     oppositeScore,
     grade,
+    fitness,
     capitalSettings,
     disciplineGuard,
-    sessionQuality
+    sessionQuality,
+    marketRegimePro,
+    distanceFromEma20
   });
   const action = getAction({ fitness, grade, hardVeto });
   const marketRegime = marketRegimePro.label;
@@ -527,6 +592,7 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
 
   return {
     decision: side,
+    rawDecision: rawSide,
     action,
     actionLabel,
     reason: buildReason({ action, side, fitness, grade, hardVeto, marketRegime, sideScore, oppositeScore, sideCoreScore }),
@@ -558,6 +624,7 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
     filters: {
       distanceFromEma20: Number((distanceFromEma20 * 100).toFixed(3)),
       minDistanceFromEma20: Number((TRADING_CONFIG.minDistanceFromEma20 * 100).toFixed(3)),
+      maxDistanceFromEma20: Number((TRADING_CONFIG.maxDistanceFromEma20 * 100).toFixed(3)),
       weakDistanceFromEma20: Number((TRADING_CONFIG.weakDistanceFromEma20 * 100).toFixed(3)),
       btcAtrPct: Number((btcAtrPct * 100).toFixed(3)),
       atrPctMin: Number((TRADING_CONFIG.atrPctMin * 100).toFixed(3)),
@@ -573,7 +640,8 @@ function analyzeMarket(btcCandles, ticker, now = new Date()) {
     },
     capitalSettings,
     disciplineGuard,
-    signalConfig: { ...TRADING_CONFIG }
+    signalConfig: { ...TRADING_CONFIG },
+    strategyProfile: { ...STRATEGY_PROFILE }
   };
 }
 
@@ -703,7 +771,7 @@ function computeFitness(context) {
     score += 8;
   }
 
-  if (btcVolumePositive && volumeRatio >= 0.8) {
+  if (btcVolumePositive && volumeRatio >= TRADING_CONFIG.volumeMinRatio) {
     score += 10;
   } else if (btcVolumePositive && volumeRatio >= 0.6) {
     score += 7;
@@ -718,10 +786,10 @@ function computeFitness(context) {
 }
 
 function getGrade(fitness) {
-  if (fitness >= 90) return "A";
-  if (fitness >= 80) return "B";
-  if (fitness >= 70) return "C";
-  if (fitness >= 55) return "D";
+  if (fitness >= STRATEGY_PROFILE.minFitness) return "A";
+  if (fitness >= 85) return "B";
+  if (fitness >= 75) return "C";
+  if (fitness >= 60) return "D";
   return "F";
 }
 
@@ -792,7 +860,19 @@ function getDisciplineGuard(now = new Date(), capitalSettings = getCapitalSettin
 }
 
 function getHardVetoReason(context) {
-  const { dataFreshness, extreme, btcAtrPct, btcVolumePositive, volumeRatio, gap, cooldown, sideScore, oppositeScore, disciplineGuard, sessionQuality } = context;
+  const { dataFreshness, extreme, btcAtrPct, btcVolumePositive, volumeRatio, gap, cooldown, sideScore, oppositeScore, disciplineGuard, sessionQuality, rawSide, marketRegimePro, distanceFromEma20 } = context;
+  if (STRATEGY_PROFILE.shortOnly && rawSide === "LONG") {
+    return "LOCKED_RISK: Hồ sơ Config 180 chỉ quan sát SHORT. Bối cảnh hiện nghiêng LONG nên không dựng lệnh live.";
+  }
+  if (STRATEGY_PROFILE.requiredRegimeCode && marketRegimePro && marketRegimePro.code !== STRATEGY_PROFILE.requiredRegimeCode) {
+    return `LOCKED_RISK: Config 180 chỉ nhận ${STRATEGY_PROFILE.requiredRegimeLabel}. Regime hiện tại là ${marketRegimePro.label}.`;
+  }
+  if (Number.isFinite(distanceFromEma20) && distanceFromEma20 < TRADING_CONFIG.minDistanceFromEma20) {
+    return `LOCKED_RISK: khoảng cách EMA20 dưới ${(TRADING_CONFIG.minDistanceFromEma20 * 100).toFixed(1)}%. Chưa đủ xa cho bộ SHORT Trend.`;
+  }
+  if (Number.isFinite(distanceFromEma20) && distanceFromEma20 > TRADING_CONFIG.maxDistanceFromEma20) {
+    return `LOCKED_RISK: khoảng cách EMA20 trên ${(TRADING_CONFIG.maxDistanceFromEma20 * 100).toFixed(1)}%. Quá xa, dễ chase.`;
+  }
   if (sessionQuality && sessionQuality.hardLock) {
     return `LOCKED_RISK: Session Quality ${sessionQuality.label}. ${sessionQuality.advice}`;
   }
@@ -800,16 +880,16 @@ function getHardVetoReason(context) {
     return `LOCKED_RISK: ${disciplineGuard.reason}`;
   }
   if (dataFreshness.status !== "FRESH") {
-    return `LOCKED_RISK: ${dataFreshness.label}. Không dùng dữ liệu stale/old để bấm 20x.`;
+    return `LOCKED_RISK: ${dataFreshness.label}. Không dùng dữ liệu stale/old để quan sát x5.`;
   }
   if (!Number.isFinite(btcAtrPct) || btcAtrPct < TRADING_CONFIG.atrPctMin) {
-    return "LOCKED_RISK: BTC ATR% dưới 1.0%. Biến động quá thấp, dễ nhiễu.";
+    return "LOCKED_RISK: BTC ATR% dưới 0.6%. Biến động quá thấp, dễ nhiễu.";
   }
   if (btcAtrPct > TRADING_CONFIG.atrPctMax) {
-    return "LOCKED_RISK: BTC ATR% trên 2.0%. Biến động quá loạn cho 20x.";
+    return "LOCKED_RISK: BTC ATR% trên 2.0%. Biến động quá loạn cho Config 180.";
   }
-  if (!btcVolumePositive || volumeRatio < 0.6) {
-    return "LOCKED_RISK: volume BTC không đủ tin cậy.";
+  if (!btcVolumePositive || volumeRatio < TRADING_CONFIG.volumeMinRatio) {
+    return `LOCKED_RISK: volume BTC dưới ngưỡng ${TRADING_CONFIG.volumeMinRatio}x, không đủ tin cậy.`;
   }
   if (extreme) {
     return "LOCKED_RISK: nến BTC 4H quá cực đoan. Không chase sau nến lớn.";
@@ -824,14 +904,14 @@ function getHardVetoReason(context) {
 }
 
 function getAction(context) {
-  const { fitness, hardVeto } = context;
+  const { fitness, grade, hardVeto } = context;
   if (hardVeto) {
     return "LOCKED_RISK";
   }
-  if (fitness >= 80) {
-    return "EXECUTABLE";
+  if (grade === STRATEGY_PROFILE.requiredGrade && fitness >= STRATEGY_PROFILE.minFitness) {
+    return STRATEGY_PROFILE.observationOnly ? "WATCHLIST_HIT" : "EXECUTABLE";
   }
-  if (fitness >= 70) {
+  if (fitness >= 85) {
     return "WAIT_TRIGGER";
   }
   return "PLAN_ONLY";
@@ -840,6 +920,7 @@ function getAction(context) {
 function getActionLabel(action) {
   const labels = {
     EXECUTABLE: "Có thể xem xét thủ công",
+    WATCHLIST_HIT: "Config 180 khớp — chỉ quan sát",
     WAIT_TRIGGER: "Chờ trigger, không chase",
     PLAN_ONLY: "Chỉ lập kế hoạch",
     LOCKED_RISK: "Khóa rủi ro"
@@ -857,7 +938,7 @@ function getSessionQuality(now = new Date(), grade = "F", action = "PLAN_ONLY") 
       label: "Khuya / dễ mất tỉnh táo",
       score: 35,
       hardLock: !["A"].includes(grade),
-      advice: "Sau 23:30 chỉ nên PAPER hoặc Grade A thật đẹp. Buồn ngủ thì không trade."
+      advice: "Sau 23:30 chỉ nên WATCHLIST/PAPER. Buồn ngủ thì không trade."
     };
   }
   if (minutes >= 1140 && minutes < lateStart) {
@@ -901,10 +982,10 @@ function getMarketRegimePro(context) {
   if (btcAtrPct > TRADING_CONFIG.atrPctMax) {
     return { code: "VOLATILE", label: "Biến động quá mạnh", playbook: "Giảm size, chỉ Limit, tuyệt đối không đuổi giá.", score: 35 };
   }
-  if (aboveStack && btc.ema50SlopeUp && volumeRatio >= 0.6) {
+  if (aboveStack && btc.ema50SlopeUp && volumeRatio >= TRADING_CONFIG.volumeMinRatio) {
     return { code: "TREND_UP", label: "Trend Up", playbook: "Ưu tiên Long khi hồi về vùng, không mua đuổi.", score: 82 };
   }
-  if (belowStack && btc.ema50SlopeDown && volumeRatio >= 0.6) {
+  if (belowStack && btc.ema50SlopeDown && volumeRatio >= TRADING_CONFIG.volumeMinRatio) {
     return { code: "TREND_DOWN", label: "Trend Down", playbook: "Ưu tiên Short khi hồi lên vùng, không bán đuổi.", score: 82 };
   }
   if (distanceFromEma20 < TRADING_CONFIG.weakDistanceFromEma20) {
@@ -917,17 +998,20 @@ function getCapitalLadder(grade, action, capitalSettings = getCapitalSettings())
   const base = Number(capitalSettings.marginPerTradeUsdt || CAPITAL_DEFAULTS.marginPerTradeUsdt);
   const fund = Number(capitalSettings.futuresFundUsdt || CAPITAL_DEFAULTS.futuresFundUsdt);
   let recommended = base;
-  let label = "Giữ 50 USDT nếu kỷ luật đủ";
-  if (action === "LOCKED_RISK" || action === "PLAN_ONLY") {
+  let label = "Config 180 dùng margin 100–200 USDT để tạo vị thế 500–1000 USD, bản này chỉ WATCHLIST";
+  if (STRATEGY_PROFILE.observationOnly || action === "WATCHLIST_HIT") {
+    recommended = 0;
+    label = "NO_LIVE: chỉ quan sát/paper, chưa dùng tiền thật";
+  } else if (action === "LOCKED_RISK" || action === "PLAN_ONLY") {
     recommended = 0;
     label = "Không dùng tiền thật — chỉ PAPER/quan sát";
   } else if (grade === "C") {
     recommended = Math.min(base, 25);
-    label = "Grade C: giảm về 25 USDT hoặc chờ trigger rất rõ";
+    label = "Grade C: chỉ paper hoặc chờ trigger rất rõ";
   } else if (grade === "D" || grade === "F") {
     recommended = 0;
     label = "Grade yếu: không mở vị thế thật";
-  } else if (fund < base * 2) {
+  } else if (fund < base) {
     recommended = Math.min(base, Math.max(10, Math.floor(fund * 0.35)));
     label = "Quỹ mỏng: giảm margin, ưu tiên sống sót";
   }
@@ -940,6 +1024,7 @@ function getCapitalLadder(grade, action, capitalSettings = getCapitalSettings())
 }
 
 function getRiskProfile(action, grade) {
+  if (action === "WATCHLIST_HIT") return "OBSERVATION_ONLY";
   if (action === "LOCKED_RISK") return "LOCKED";
   if (grade === "A") return "NORMAL_SMALL";
   if (grade === "B") return "REDUCED";
@@ -975,13 +1060,16 @@ function getSlogan(context) {
 function buildReason(context) {
   const { action, side, fitness, grade, hardVeto, marketRegime, sideScore, oppositeScore, sideCoreScore } = context;
   if (hardVeto) {
-    return `${hardVeto} Vẫn dựng phiếu phân tích ${side} với vốn chuẩn 50 USDT để xem lời/lỗ giả định, nhưng trạng thái khóa nghĩa là không nhập lệnh thật.`;
+    return `${hardVeto} Vẫn dựng phiếu phân tích ${side} với vốn chuẩn 100 USDT để xem lời/lỗ giả định, nhưng trạng thái khóa nghĩa là không nhập lệnh thật.`;
+  }
+  if (action === "WATCHLIST_HIT") {
+    return `${side} đạt ${fitness}% · Grade ${grade}. Regime: ${marketRegime}. Score ${sideScore}/8 so với ${oppositeScore}/8, BTC core ${sideCoreScore}/5. Khớp bộ Config 180 nhưng trạng thái NO_LIVE: chỉ quan sát/paper, ghi lại kết quả 15M.`;
   }
   if (action === "EXECUTABLE") {
     return `${side} đạt ${fitness}% · Grade ${grade}. Regime: ${marketRegime}. Score ${sideScore}/8 so với ${oppositeScore}/8, BTC core ${sideCoreScore}/5. Chỉ vào đúng Limit, có TP1/TP2/SL, không dời SL.`;
   }
   if (action === "WAIT_TRIGGER") {
-    return `${side} đạt ${fitness}% · Grade ${grade}. Có thể theo dõi nhưng không chase. Chỉ hợp lệ nếu giá về vùng entry; hết vùng thì bỏ. TP1 chốt 50%, TP2 chốt phần còn lại.`;
+    return `${side} đạt ${fitness}% · Grade ${grade}. Có thể theo dõi nhưng không chase. Chỉ hợp lệ nếu giá hồi lên vùng entry; hết 12 nến 15M thì bỏ. TP1/TP2 cùng mức 0.70% theo Config 180.`;
   }
   return `${side} đạt ${fitness}% · Grade ${grade}. Đây là PLAN_ONLY: có bản đồ để nhìn, chưa phải lệnh đáng xuống tiền.`;
 }
@@ -1044,6 +1132,10 @@ function buildSession(analysis, ticker, now) {
       marginMode: TRADING_CONFIG.marginMode,
       orderType: TRADING_CONFIG.orderType,
       waitMinutes: TRADING_CONFIG.waitMinutes,
+      executionTimeframe: STRATEGY_PROFILE.executionTimeframe,
+      expiryCandles15m: STRATEGY_PROFILE.expiryCandles15m,
+      strategyName: STRATEGY_PROFILE.name,
+      strategyStatus: STRATEGY_PROFILE.status,
       noChasePct: Number((TRADING_CONFIG.noChasePct * 100).toFixed(2)),
       estimatedWin: riskTotals.win,
       estimatedLoss: riskTotals.loss,
@@ -1065,13 +1157,13 @@ function getMarginUsdt(action, grade) {
 }
 
 function getPositionUsdt(marginUsdt) {
-  return Number((Number(marginUsdt || 0) * TRADING_CONFIG.leverage).toFixed(2));
+  return Number(getNotionalFromMargin(marginUsdt).toFixed(2));
 }
 
 function buildOrder(analysis, ticker, marginUsdt, positionUsdt) {
   const gradeParams = TP_SL_BY_GRADE[analysis.grade] || TP_SL_BY_GRADE.F;
   const direction = analysis.decision;
-  const pullbackPct = analysis.action === "EXECUTABLE" ? 0.0005 : analysis.action === "WAIT_TRIGGER" ? 0.0015 : 0.0025;
+  const pullbackPct = ["EXECUTABLE", "WATCHLIST_HIT"].includes(analysis.action) ? 0.0005 : analysis.action === "WAIT_TRIGGER" ? 0.0015 : 0.0025;
   const entry = direction === "LONG" ? ticker * (1 - pullbackPct) : ticker * (1 + pullbackPct);
   const takeProfit1 = direction === "LONG" ? entry * (1 + gradeParams.tp1) : entry * (1 - gradeParams.tp1);
   const takeProfit2 = direction === "LONG" ? entry * (1 + gradeParams.tp2) : entry * (1 - gradeParams.tp2);
@@ -1113,8 +1205,8 @@ function buildOrder(analysis, ticker, marginUsdt, positionUsdt) {
     slPct: formatPercent(gradeParams.sl),
     tp1CloseRatio: formatPercent(closeRatio),
     tp2CloseRatio: formatPercent(remainingRatio),
-    tpSlMode: `Survival TP1/TP2 · ${gradeParams.label}`,
-    survivalRule: `TP1 chốt ${formatPercent(closeRatio)} vị thế, phần còn lại dời SL về hòa vốn; TP2 chốt phần còn lại.`,
+    tpSlMode: `Config 180 TP1/TP2 · ${gradeParams.label}`,
+    survivalRule: `TP1 và TP2 theo cùng mốc ${formatPercent(gradeParams.tp1)}; nếu dùng paper thì ghi rõ nến 15M nào chạm trước.`,
     marginUsdt: formatUsdt(marginUsdt),
     positionUsdt: formatUsdt(positionUsdt),
     notionalUsdt: formatUsdt(positionUsdt),
@@ -1207,7 +1299,7 @@ function renderTicket(session) {
   els.ticketArea.innerHTML = `
     <section class="ticket-card decision compact-ticket ${session.action === "LOCKED_RISK" ? "locked-card" : ""}">
       <div class="compact-headline">
-        <span class="signal-tier">${escapeHtml(SYMBOL_CONFIG.label)} · Isolated x${escapeHtml(TRADING_CONFIG.leverage)} · Limit</span>
+        <span class="signal-tier">${escapeHtml(SYMBOL_CONFIG.label)} · SHORT only · Isolated x${escapeHtml(TRADING_CONFIG.leverage)} · Vị thế ${escapeHtml(getPositionRangeCopy())} · Limit</span>
         <span class="grade-badge grade-${escapeHtml(session.grade)}">Grade ${escapeHtml(session.grade)} · ${escapeHtml(session.fitness)}%</span>
       </div>
 
@@ -1236,17 +1328,17 @@ function renderTicket(session) {
         <summary>Vì sao app đề xuất như vậy?</summary>
         <p class="reason">Lý do: ${escapeHtml(session.reason)}</p>
         <ol class="steps">
-          <li>Chỉ dùng ${escapeHtml(SYMBOL_CONFIG.label)} Futures, ký quỹ cô lập, x${escapeHtml(TRADING_CONFIG.leverage)}.</li>
+          <li>Chỉ dùng ${escapeHtml(SYMBOL_CONFIG.label)} Futures, SHORT only, ký quỹ cô lập, x${escapeHtml(TRADING_CONFIG.leverage)}, vị thế vào lệnh ${escapeHtml(getPositionRangeCopy())}.</li>
           <li>EXECUTABLE: có thể xem xét nhập Limit đúng vùng, không Market.</li>
           <li>WAIT_TRIGGER: chờ giá về vùng, không chase.</li>
           <li>PLAN_ONLY hoặc LOCKED_RISK: có bản đồ để nhìn, ưu tiên không xuống tiền.</li>
-          <li>Chờ đến ${escapeHtml(actionTime)}. Không khớp thì hủy. Không dời SL.</li>
+          <li>Hết ${escapeHtml(STRATEGY_PROFILE.expiryCandles15m)} nến 15M thì hủy quan sát. Không dời SL.</li>
         </ol>
       </details>
     </section>
 
     <details class="panel compact-details">
-      <summary>Phiếu BTC/USDT 20X đầy đủ</summary>
+      <summary>Phiếu BTC/USDT x5 Config 180 đầy đủ</summary>
       <div class="table-wrap">
         <table>
           <thead>
@@ -1260,7 +1352,7 @@ function renderTicket(session) {
               <th class="price">TP2</th>
               <th class="price">SL</th>
               <th class="price">Ký quỹ</th>
-              <th class="price">Vị thế x20</th>
+              <th class="price">Vị thế x5</th>
               <th class="price">TP2 Plan PnL</th>
               <th class="price">SL PnL</th>
               <th class="price">R:R</th>
@@ -1276,7 +1368,7 @@ function renderTicket(session) {
       <summary>Rủi ro ước tính</summary>
       <div class="risk-grid">
         <div class="metric"><span>Vốn ký quỹ/lệnh</span><strong>${escapeHtml(order.marginUsdt)} USDT</strong></div>
-        <div class="metric"><span>Vị thế danh nghĩa x20</span><strong>${escapeHtml(order.notionalUsdt)} USDT</strong></div>
+        <div class="metric"><span>Vị thế danh nghĩa x5</span><strong>${escapeHtml(order.notionalUsdt)} USDT</strong><small>Range chuẩn ${escapeHtml(getPositionRangeCopy())}</small></div>
         <div class="metric"><span>Ước lượng BTC</span><strong>${escapeHtml(order.btcQty)} BTC</strong></div>
         <div class="metric"><span>Đòn bẩy</span><strong>x${escapeHtml(order.leverage)} · ${escapeHtml(order.marginMode)}</strong></div>
         <div class="metric"><span>Nếu TP1 + BE</span><strong class="win">${escapeHtml(order.netTp1Be)} USDT · ${escapeHtml(order.marginRoiTp1)}</strong></div>
@@ -1286,7 +1378,7 @@ function renderTicket(session) {
         <div class="metric"><span>Lỗ SL so với quỹ futures</span><strong class="loss">${escapeHtml(order.fundRisk)}</strong></div>
         <div class="metric"><span>Phí ước tính</span><strong>${escapeHtml(order.feeEstimate)} USDT</strong></div>
       </div>
-      <p class="muted-text">20x không tha lỗi dời SL. Chạm TP1 thì bớt tham; chạm SL thì rời bàn. Không DCA futures. Không martingale. Không tăng size sau lỗ.</p>
+      <p class="muted-text">x5 vẫn không tha lỗi dời SL. Chạm TP1 thì bớt tham; chạm SL thì rời bàn. Không DCA futures. Không martingale. Không tăng size sau lỗ.</p>
     </details>
 
     <details class="panel compact-details">
@@ -1326,35 +1418,46 @@ function renderCapitalGuardPanel(session, order) {
         <p>${escapeHtml(guard.reason)} Margin/lệnh đang dùng ${escapeHtml(formatPercent(fundUsage))} quỹ futures.</p>
       </div>
       <div class="capital-form">
-        <label><span>Quỹ futures</span><input id="futuresFundInput" type="number" min="20" step="1" value="${escapeHtml(settings.futuresFundUsdt)}" /></label>
-        <label><span>Margin/lệnh</span><input id="marginPerTradeInput" type="number" min="5" step="1" value="${escapeHtml(settings.marginPerTradeUsdt)}" /></label>
+        <label><span>Quỹ futures</span><input id="futuresFundInput" type="number" min="100" step="1" value="${escapeHtml(settings.futuresFundUsdt)}" /></label>
+        <label><span>Margin/lệnh 100–200 USDT</span><input id="marginPerTradeInput" type="number" min="100" max="200" step="25" value="${escapeHtml(settings.marginPerTradeUsdt)}" /></label>
         <label><span>Daily Max Loss</span><input id="dailyMaxLossInput" type="number" min="1" step="1" value="${escapeHtml(settings.dailyMaxLossUsdt)}" /></label>
         <label><span>Weekly Max Loss</span><input id="weeklyMaxLossInput" type="number" min="5" step="1" value="${escapeHtml(settings.weeklyMaxLossUsdt)}" /></label>
         <label><span>BTC Sweep % lời tuần</span><input id="btcSweepPercentInput" type="number" min="10" max="80" step="5" value="${escapeHtml(settings.btcSweepPercent)}" /></label>
         <label class="check-label"><input id="oneTradePerDayInput" type="checkbox" ${oneTradeChecked} /> One Trade Per Day</label>
         <label class="check-label"><input id="paperModeInput" type="checkbox" ${settings.paperMode ? "checked" : ""} /> Paper Mode mặc định</label>
       </div>
+      <div class="summary-grid position-ladder-grid">
+        <div class="metric"><span>BASE</span><strong>500 USD</strong><small>Margin 100 · sống sót trước</small></div>
+        <div class="metric"><span>BOOST</span><strong>750 USD</strong><small>Margin 150 · chỉ khi tuần sạch lỗi</small></div>
+        <div class="metric"><span>MAX WATCH</span><strong>1000 USD</strong><small>Margin 200 · paper/quan sát trước</small></div>
+        <div class="metric"><span>Đang tính</span><strong>${escapeHtml(formatUsdt(getPositionUsdt(settings.marginPerTradeUsdt)))} USD</strong><small>x${escapeHtml(TRADING_CONFIG.leverage)} từ margin hiện tại</small></div>
+      </div>
       <button id="saveCapitalSettingsBtn" class="ghost-btn" type="button">Lưu phanh vốn</button>
-      <p class="muted-text">Một lệnh x20 không được lớn hơn hệ thần kinh của ông. Quỹ 50–100 USDT thì thua một SL là nghỉ, không vào lại.</p>
+      <p class="muted-text">Vị thế chuẩn 500–1000 USD tương ứng margin 100–200 USDT ở x5. Mốc 500 là BASE, 750 là BOOST khi tuần sạch lỗi, 1000 là MAX WATCH/PAPER; không tăng size sau lỗ.</p>
     </details>
   `;
 }
 
 function renderFocusTicket(session, order) {
   const isLocked = session.action === "LOCKED_RISK";
-  const canTrade = !isLocked && session.action !== "PLAN_ONLY";
-  const posture = session.action === "EXECUTABLE"
-    ? "CÓ THỂ XEM XÉT VÀO LIMIT"
-    : session.action === "WAIT_TRIGGER"
-      ? "CHỜ TRIGGER, CHƯA CHASE"
-      : session.action === "PLAN_ONLY"
-        ? "PHIẾU YẾU, CHỈ VÀO NẾU ÔNG TỰ CHẤP NHẬN"
-        : "KHÓA RỦI RO, KHÔNG VÀO";
-  const executeLine = canTrade
-    ? "Có thể nhập tay nếu chấp nhận rủi ro. Không Market, không dời SL. TP1 chốt một nửa, phần còn lại để TP2."
-    : isLocked
-      ? "App vẫn tính sẵn phiếu 50 USDT để ông nhìn lời/lỗ, nhưng trạng thái là KHÓA RỦI RO. Không nhập OKX."
-      : "Có phiếu 50 USDT để nhìn bài toán, nhưng ưu tiên không xuống tiền khi Grade yếu.";
+  const isWatchlistHit = session.action === "WATCHLIST_HIT";
+  const canTrade = !STRATEGY_PROFILE.observationOnly && !isLocked && session.action !== "PLAN_ONLY";
+  const posture = isWatchlistHit
+    ? "CONFIG 180 KHỚP — WATCHLIST ONLY"
+    : session.action === "EXECUTABLE"
+      ? "CÓ THỂ XEM XÉT VÀO LIMIT"
+      : session.action === "WAIT_TRIGGER"
+        ? "CHỜ TRIGGER, CHƯA CHASE"
+        : session.action === "PLAN_ONLY"
+          ? "PHIẾU YẾU, CHỈ QUAN SÁT"
+          : "KHÓA RỦI RO, KHÔNG VÀO";
+  const executeLine = isWatchlistHit
+    ? "Bộ lọc khớp nhưng app đang NO_LIVE. Ghi giấy thử: Short x5, vị thế 500–1000 USD theo ladder, TP/SL theo Config 180, hết 12 nến 15M thì đóng quan sát."
+    : canTrade
+      ? "Có thể nhập tay nếu chấp nhận rủi ro. Không Market, không dời SL."
+      : isLocked
+        ? "App vẫn tính sẵn phiếu theo margin 100–200 USDT để ông nhìn lời/lỗ, nhưng trạng thái là KHÓA RỦI RO. Không nhập OKX."
+        : "Có phiếu theo vùng 500–1000 USD để nhìn bài toán, nhưng ưu tiên không xuống tiền khi Grade yếu.";
 
   return `
     <div class="focus-ticket ${canTrade ? "" : "focus-ticket-muted"}">
@@ -1369,8 +1472,8 @@ function renderFocusTicket(session, order) {
           ${escapeHtml(order.direction)}
         </div>
         <div class="focus-metric"><span>Vốn ký quỹ</span><strong>${escapeHtml(order.marginUsdt)} USDT</strong></div>
-        <div class="focus-metric"><span>Lão khuyến nghị</span><strong>${escapeHtml(order.recommendedMarginUsdt)} USDT</strong></div>
-        <div class="focus-metric"><span>Vị thế x20</span><strong>${escapeHtml(order.notionalUsdt)} USDT</strong></div>
+        <div class="focus-metric"><span>NO_LIVE khuyến nghị</span><strong>${escapeHtml(order.recommendedMarginUsdt)} USDT</strong></div>
+        <div class="focus-metric"><span>Vị thế x5</span><strong>${escapeHtml(order.notionalUsdt)} USDT</strong><small>Range ${escapeHtml(getPositionRangeCopy())}</small></div>
         <div class="focus-metric"><span>Ước lượng BTC</span><strong>${escapeHtml(order.btcQty)} BTC</strong></div>
         <div class="focus-metric"><span>Entry zone</span><strong>${escapeHtml(order.entryZone)}</strong></div>
       </div>
@@ -1414,6 +1517,7 @@ function renderFocusTicket(session, order) {
 
 function getDecisionClass(session) {
   if (session.action === "LOCKED_RISK") return "decision-flat";
+  if (session.action === "WATCHLIST_HIT") return "decision-short";
   if (session.action === "PLAN_ONLY") return "decision-flat";
   return session.decision === "LONG" ? "decision-long" : "decision-short";
 }
@@ -1428,11 +1532,19 @@ function renderSloganBox(session) {
 }
 
 function renderRiskWarning(session) {
+  if (session.action === "WATCHLIST_HIT") {
+    return `
+      <div class="warning-box soft watchlist-box">
+        <strong>WATCHLIST_HIT · NO_LIVE</strong>
+        <p>Setup khớp bộ Config 180, nhưng đây là bản quan sát. Không nhập OKX thật. Hãy ghi paper outcome theo 12 nến 15M để kiểm chứng thêm.</p>
+      </div>
+    `;
+  }
   if (session.action === "LOCKED_RISK") {
     return `
       <div class="warning-box">
         <strong>LOCKED_RISK</strong>
-        <p>App vẫn tính sẵn phiếu 50 USDT để ông nhìn lời/lỗ, nhưng trạng thái khóa nghĩa là không nhập lệnh thật. Không phá khóa bằng cảm xúc.</p>
+        <p>App vẫn tính sẵn phiếu 100 USDT để ông nhìn lời/lỗ, nhưng trạng thái khóa nghĩa là không nhập lệnh thật. Không phá khóa bằng cảm xúc.</p>
       </div>
     `;
   }
@@ -1569,13 +1681,13 @@ function renderScoreDetails(session) {
         <div class="metric"><span>Regime</span><strong>${escapeHtml(analysis.marketRegime)}</strong></div>
       </div>
       <ul class="tech-list">
-        <li>V2.0 FINAL chỉ dùng BTC/USDT Futures, Isolated, x20, Limit, Survival TP1/TP2, Command Center, Market Regime Pro, Session Quality, Pre-Trade Contract, Capital Ladder, Mistake Counter, Weekly Review & BTC Sweep, Paper Mode; không auto trade, không private API.</li>
+        <li>V2.2 CONFIG180 POSITION RANGE chỉ dùng BTC/USDT-SWAP, SHORT only, 4H closed candles, execution 15M, Isolated x5, vị thế 500–1000 USD, margin 100–200 USDT, Grade A only, Min Fitness 92; mặc định WATCHLIST / OBSERVATION_ONLY / NO_LIVE.</li>
         <li>Always Plan: app luôn dựng 01 phiếu phân tích BTC. Action quyết định có nên xuống tiền hay chỉ xem.</li>
-        <li>Fitness 100 điểm gồm: xu hướng 25, momentum 15, EMA distance 10, ATR 15, volume 10, không extreme 10, Long/Short gap 10, data fresh 5.</li>
-        <li>Capital Guard: quỹ futures và margin/lệnh lưu local trên máy. x20 hiển thị notional, PnL, % lỗ so với quỹ. LOCKED_RISK vẫn tính lời/lỗ giả định nhưng không khuyến nghị nhập lệnh thật.</li>
+        <li>Fitness 100 điểm gồm xu hướng, momentum, EMA distance, ATR, volume, không extreme, Long/Short gap, data fresh. Riêng Config 180 chỉ tính hợp lệ khi Trend Down, Grade A, Fitness ≥92.</li>
+        <li>Capital Guard: quỹ futures và margin/lệnh lưu local trên máy. x5 hiển thị notional, PnL, % lỗ so với quỹ. LOCKED_RISK vẫn tính lời/lỗ giả định nhưng không khuyến nghị nhập lệnh thật.</li>
         <li>BTC close ${analysis.btc.close}, EMA20 ${analysis.btc.ema20}, EMA50 ${analysis.btc.ema50}, EMA50 slope ${escapeHtml(analysis.btc.ema50Slope)}.</li>
         <li>BTC core Long/Short: ${analysis.btcLongCoreScore}/5 · ${analysis.btcShortCoreScore}/5. Khoảng cách EMA20: ${analysis.filters.distanceFromEma20}%.</li>
-        <li>ATR% ${analysis.filters.btcAtrPct}% · vùng chuẩn ${analysis.filters.atrPctMin}% đến ${analysis.filters.atrPctMax}% · volume ratio ${analysis.filters.volumeRatio}x.</li>
+        <li>ATR% ${analysis.filters.btcAtrPct}% · vùng chuẩn ${analysis.filters.atrPctMin}% đến ${analysis.filters.atrPctMax}% · EMA20 distance ${analysis.filters.minDistanceFromEma20}% đến ${analysis.filters.maxDistanceFromEma20}% · volume ratio ${analysis.filters.volumeRatio}x.</li>
         <li>Cooldown: ${analysis.filters.cooldownActive ? "Đang bật" : "Không bật"}. ${escapeHtml(analysis.filters.cooldownReason)}</li>
         <li>Extreme candle: ${analysis.extreme ? "Có" : "Không"}. Hard veto: ${escapeHtml(analysis.hardVeto || "Không")}</li>
       </ul>
@@ -1648,7 +1760,7 @@ function bindCopyTicketControls(session, order) {
 
 function buildCopyTicketText(session, order) {
   return [
-    "FTOKX V2.0 FINAL · BTC/USDT Futures · Isolated x20",
+    "FTOKX V2.2 CONFIG180 RANGE · BTC/USDT-SWAP · SHORT only · Isolated x5 · NO_LIVE",
     `Action: ${session.action} · Grade ${session.grade} · Fitness ${session.fitness}%`,
     `Hướng: ${order.direction}`,
     `Margin: ${order.marginUsdt} USDT`,
@@ -1662,8 +1774,8 @@ function buildCopyTicketText(session, order) {
     `Kế hoạch PnL: TP1+BE ${order.netTp1Be} USDT | TP2 ${order.netTp2Plan} USDT | SL ${order.netLoss} USDT`,
     `Regime: ${session.analysis.marketRegimePro ? session.analysis.marketRegimePro.label : session.marketRegime}`,
     `Session: ${session.analysis.sessionQuality ? session.analysis.sessionQuality.label : "Chưa phân loại"}`,
-    `Lão khuyến nghị margin: ${order.recommendedMarginUsdt} USDT`,
-    "Contract: Limit, không dời SL, không vào lại sau SL, không dùng tiền DCA BTC để gỡ futures.",
+    `NO_LIVE khuyến nghị margin thật: ${order.recommendedMarginUsdt} USDT`,
+    "Contract: WATCHLIST/PAPER only, Limit giả lập, không dời SL, không vào lại sau SL.",
     "Luật: không Market, không DCA futures, không martingale, không tăng size sau lỗ."
   ].join("\n");
 }
@@ -1711,6 +1823,10 @@ function isContractComplete() {
 
 function canMarkLimitPlaced(session) {
   if (!session) return false;
+  if (STRATEGY_PROFILE.observationOnly || session.action === "WATCHLIST_HIT") {
+    showMessage("NO_LIVE đang bật", "Bản Config 180 này chỉ dùng để quan sát/paper. Không đánh dấu đặt Limit thật.", "bad");
+    return false;
+  }
   if (session.action === "LOCKED_RISK" || session.action === "PLAN_ONLY") {
     showMessage("Chưa được đánh dấu đặt Limit", "PLAN_ONLY/LOCKED_RISK chỉ là bản đồ. Không biến cảnh báo thành lệnh thật.", "bad");
     return false;
@@ -1751,7 +1867,7 @@ function renderCommandBadgesPanel(session, order) {
   const settings = getCapitalSettings();
   return `
     <section class="command-badges">
-      <div><span>Mode</span><strong>${settings.paperMode ? "PAPER FIRST" : "REAL MANUAL"}</strong></div>
+      <div><span>Mode</span><strong>${STRATEGY_PROFILE.observationOnly ? "NO_LIVE WATCH" : (settings.paperMode ? "PAPER FIRST" : "REAL MANUAL")}</strong></div>
       <div><span>Regime</span><strong>${escapeHtml(session.analysis.marketRegimePro ? session.analysis.marketRegimePro.label : session.marketRegime)}</strong></div>
       <div><span>Session</span><strong>${escapeHtml(session.analysis.sessionQuality ? session.analysis.sessionQuality.label : "Chưa phân loại")}</strong></div>
       <div><span>Ladder</span><strong>${escapeHtml(order.recommendedMarginUsdt)} USDT</strong></div>
@@ -1776,9 +1892,11 @@ function renderRegimeSessionPanel(session) {
 }
 
 function renderPreTradeContractPanel(session) {
-  const disabledText = session.action === "LOCKED_RISK" || session.action === "PLAN_ONLY"
-    ? "PLAN_ONLY/LOCKED_RISK không nên đánh dấu lệnh thật. Contract vẫn để nhắc tay."
-    : "Tick đủ trước khi đánh dấu Đã đặt Limit.";
+  const disabledText = STRATEGY_PROFILE.observationOnly || session.action === "WATCHLIST_HIT"
+    ? "NO_LIVE: Contract chỉ để nhắc tay khi quan sát/paper, không đánh dấu lệnh thật."
+    : session.action === "LOCKED_RISK" || session.action === "PLAN_ONLY"
+      ? "PLAN_ONLY/LOCKED_RISK không nên đánh dấu lệnh thật. Contract vẫn để nhắc tay."
+      : "Tick đủ trước khi đánh dấu Đã đặt Limit.";
   return `
     <details class="panel compact-details contract-panel" open>
       <summary>Pre-Trade Contract</summary>
@@ -2043,7 +2161,7 @@ function updateWatchStatus(message) {
 }
 
 function maybeAlertSignal(session) {
-  if (!session || session.action !== "EXECUTABLE") {
+  if (!session || !["EXECUTABLE", "WATCHLIST_HIT"].includes(session.action)) {
     return false;
   }
   const signature = buildAlertSignature(session);
@@ -2068,10 +2186,10 @@ function hasAlertedSignature(signature) {
 function startSignalAlert(session, paperTest) {
   stopSignalAlert({ keepMessage: true });
   const direction = session.decision || "TEST";
-  const title = direction === "TEST" ? "TEST CHUÔNG/RUNG" : `BTC 20X EXECUTABLE ${direction}`;
+  const title = direction === "TEST" ? "TEST CHUÔNG/RUNG" : `${direction === "SHORT" ? "BTC x5 CONFIG180 RANGE WATCHLIST SHORT" : "BTC x5 WATCHLIST " + direction}`;
   const body = direction === "TEST"
     ? "Nếu nghe chuông hoặc máy rung là Watch Mode dùng được trên thiết bị này."
-    : `Fitness ${session.fitness}% · Grade ${session.grade}. Đã tạo giấy thử TP1/TP2/SL giả lập. Không phải lệnh tự động.`;
+    : `Fitness ${session.fitness}% · Grade ${session.grade}. Đã tạo giấy thử Config 180. NO_LIVE, không phải lệnh tự động.`;
 
   showMessage(title, body, direction === "TEST" ? "" : "alert");
   notifySignal(title, body);
@@ -2350,7 +2468,7 @@ function getPaperTest(id) {
 }
 
 function getPaperTestForSession(session) {
-  if (!session || session.action !== "EXECUTABLE") {
+  if (!session || !["EXECUTABLE", "WATCHLIST_HIT"].includes(session.action)) {
     return loadPaperTests()[0] || null;
   }
   return getPaperTest(buildAlertSignature(session)) || loadPaperTests()[0] || null;
